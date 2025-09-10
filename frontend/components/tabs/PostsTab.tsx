@@ -137,14 +137,13 @@ export default function PostsTab() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Криптонит</Text>
-        {isAuthenticated && (
-          <TouchableOpacity
-            style={styles.createButton}
-            onPress={() => router.push('/create-post')}
-          >
-            <Ionicons name="add" size={24} color="#4ecdc4" />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity
+          style={styles.createButton}
+          onPress={() => router.push('/create-post')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="add" size={24} color="#4ecdc4" />
+        </TouchableOpacity>
       </View>
 
       <FlatList
