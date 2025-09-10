@@ -15,20 +15,20 @@ import {
   StatusBar,
   Modal,
 } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { router, useLocalSearchParams } from 'expo-router';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../components/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 interface Post {
   id: string;
-  author_id: string;  
-  author_display_name: string;
-  title: string;
+  author_id: string;
+  author: string;
+  title?: string;
   content: string;
-  images: string[];
+  image_base64?: string;
   tags: string[];
   created_at: string;
   comments_count: number;
@@ -36,7 +36,7 @@ interface Post {
 
 interface Comment {
   id: string;
-  author_display_name: string;
+  author: string;
   content: string;
   created_at: string;
 }
@@ -50,15 +50,8 @@ export default function PostDetail() {
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  // Platform specific top padding
-  const getTopPadding = () => {
-    if (Platform.OS === 'android') {
-      return (StatusBar.currentHeight || 0) + 10;
-    }
-    return insets.top;
-  };
 
   useEffect(() => {
     if (id) {
@@ -69,49 +62,37 @@ export default function PostDetail() {
 
   const fetchPost = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${id}`);
+      const response = await fetch(`${API_BASE_URL}/posts/${id}`);
       if (response.ok) {
         const data = await response.json();
         setPost(data);
-      } else {
-        Alert.alert('Ошибка', 'Пост не найден');
-        router.back();
       }
     } catch (error) {
       console.error('Error fetching post:', error);
-      Alert.alert('Ошибка', 'Не удалось загрузить пост');
-    } finally {
-      setIsLoading(false);
     }
   };
 
   const fetchComments = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comments`);
+      const response = await fetch(`${API_BASE_URL}/posts/${id}/comments`);
       if (response.ok) {
         const data = await response.json();
         setComments(data);
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim()) {
-      Alert.alert('Ошибка', 'Введите текст комментария');
-      return;
-    }
-
-    if (!user?.token) {
-      Alert.alert('Ошибка', 'Необходимо войти в систему');
-      return;
-    }
+    if (!newComment.trim() || !user?.token) return;
 
     setIsSubmittingComment(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts/${id}/comments`, {
+      const response = await fetch(`${API_BASE_URL}/posts/${id}/comments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -125,16 +106,9 @@ export default function PostDetail() {
       if (response.ok) {
         setNewComment('');
         fetchComments();
-        // Update comments count in post
-        if (post) {
-          setPost({ ...post, comments_count: post.comments_count + 1 });
-        }
-      } else {
-        Alert.alert('Ошибка', 'Не удалось добавить комментарий');
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      Alert.alert('Ошибка', 'Не удалось добавить комментарий');
     } finally {
       setIsSubmittingComment(false);
     }
@@ -159,7 +133,7 @@ export default function PostDetail() {
 
     try {
       setShowMenu(false);
-      const response = await fetch(`${API_BASE_URL}/api/chats`, {
+      const response = await fetch(`${API_BASE_URL}/chats`, {
         method: 'POST',  
         headers: {
           'Content-Type': 'application/json',
@@ -183,61 +157,64 @@ export default function PostDetail() {
     }
   };
 
-  const handleReport = (targetType: string, targetId: string) => {
-    Alert.alert(
-      'Пожаловаться на контент',
-      'Выберите причину жалобы:',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Спам', onPress: () => submitReport(targetType, targetId, 'Спам') },
-        { text: 'Оскорбления', onPress: () => submitReport(targetType, targetId, 'Оскорбления') },
-        { text: 'Неприемлемый контент', onPress: () => submitReport(targetType, targetId, 'Неприемлемый контент') },
-      ]
-    );
-  };
-
-  const submitReport = async (targetType: string, targetId: string, reason: string) => {
+  const handleReport = async (type: 'post' | 'comment', itemId: string) => {
     if (!user?.token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/reports`, {
+      const response = await fetch(`${API_BASE_URL}/reports`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
         },
         body: JSON.stringify({
-          target_type: targetType,
-          target_id: targetId,
-          reason,
+          type,
+          target_id: itemId,
+          reason: 'Inappropriate content',
         }),
       });
 
       if (response.ok) {
-        Alert.alert('Спасибо', 'Ваша жалоба отправлена на рассмотрение');
+        Alert.alert('Спасибо', 'Ваша жалоба принята');
       }
     } catch (error) {
-      console.error('Error submitting report:', error);
+      console.error('Error reporting:', error);
     }
-  };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleString('ru-RU');
+    Alert.alert(
+      'Пожаловаться на контент',
+      'Ваша жалоба принята. Мы рассмотрим её в ближайшее время.',
+      [{ text: 'OK' }]
+    );
   };
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4ecdc4" />
-        <Text style={styles.loadingText}>Загружаем пост...</Text>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Пост</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4ecdc4" />
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
       </View>
     );
   }
 
   if (!post) {
     return (
-      <View style={[styles.container, { paddingTop: getTopPadding() }]}>
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Пост</Text>
+        </View>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Пост не найден</Text>
         </View>
@@ -246,130 +223,104 @@ export default function PostDetail() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: getTopPadding() }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+      <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Пост</Text>
+        <TouchableOpacity
+          style={[styles.menuButton, { zIndex: 1000 }]}
+          onPress={handlePostMenu}
+          activeOpacity={0.7}
+          accessibilityLabel="Menu"
+        >
+          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardContainer}
+        style={{ flex: 1 }}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Пост</Text>
-          <TouchableOpacity
-            style={[styles.menuButton, { zIndex: 1000 }]}
-            onPress={handlePostMenu}
-            activeOpacity={0.7}
-            accessibilityLabel="Menu"
-          >
-            <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Post */}
-          <View style={styles.postContainer}>
+        <ScrollView style={styles.content}>
+          <View style={styles.postCard}>
             <View style={styles.postHeader}>
-              <Text style={styles.authorName}>{post.author_display_name}</Text>
-              <Text style={styles.postDate}>{formatDate(post.created_at)}</Text>
+              <Text style={styles.author}>{post.author}</Text>
+              <Text style={styles.timestamp}>
+                {new Date(post.created_at).toLocaleDateString('ru-RU')}
+              </Text>
             </View>
-            
-            <Text style={styles.postTitle}>{post.title}</Text>
-            <Text style={styles.postContent}>{post.content}</Text>
-            
-            {/* Images */}
-            {post.images.length > 0 && (
-              <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                style={styles.imagesContainer}
-              >
-                {post.images.map((imageUri, index) => (
-                  <Image
-                    key={index}
-                    source={{ uri: imageUri }}
-                    style={styles.postImage}
-                    resizeMode="cover"
-                  />
-                ))}
-              </ScrollView>
+
+            {post.title && (
+              <Text style={styles.title}>{post.title}</Text>
             )}
-            
-            {/* Tags */}
+
+            <Text style={styles.content}>{post.content}</Text>
+
+            {post.image_base64 && (
+              <Image
+                source={{ uri: `data:image/jpeg;base64,${post.image_base64}` }}
+                style={styles.postImage}
+                resizeMode="cover"
+              />
+            )}
+
             {post.tags.length > 0 && (
               <View style={styles.tagsContainer}>
                 {post.tags.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>#{tag}</Text>
-                  </View>
+                  <Text key={index} style={styles.tag}>
+                    #{tag}
+                  </Text>
                 ))}
               </View>
             )}
-            
+
             <View style={styles.postStats}>
-              <View style={styles.statsItem}>
-                <Ionicons name="chatbubble-outline" size={16} color="#666" />
-                <Text style={styles.statsText}>{post.comments_count} комментариев</Text>
-              </View>
+              <Text style={styles.statsText}>
+                {post.comments_count} комментарие{post.comments_count === 1 ? 'й' : 'в'}
+              </Text>
             </View>
           </View>
 
-          {/* Comments Section */}
           <View style={styles.commentsSection}>
-            <Text style={styles.sectionTitle}>Комментарии</Text>
+            <Text style={styles.commentsTitle}>Комментарии</Text>
             
-            {comments.length === 0 ? (
-              <View style={styles.emptyComments}>
-                <Ionicons name="chatbubble-outline" size={40} color="#333" />
-                <Text style={styles.emptyCommentsText}>Пока нет комментариев</Text>
-                <Text style={styles.emptyCommentsSubtext}>Станьте первым, кто оставит комментарий</Text>
-              </View>
-            ) : (
-              comments.map((comment) => (
-                <View key={comment.id} style={styles.commentCard}>
-                  <View style={styles.commentHeader}>
-                    <Text style={styles.commentAuthor}>{comment.author_display_name}</Text>
-                    <TouchableOpacity
-                      onPress={() => handleReport('comment', comment.id)}
-                    >
-                      <Ionicons name="flag-outline" size={16} color="#666" />
-                    </TouchableOpacity>
-                  </View>
-                  <Text style={styles.commentContent}>{comment.content}</Text>
-                  <Text style={styles.commentDate}>{formatDate(comment.created_at)}</Text>
+            {comments.map((comment) => (
+              <View key={comment.id} style={styles.commentCard}>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.commentAuthor}>{comment.author}</Text>
+                  <Text style={styles.commentTimestamp}>
+                    {new Date(comment.created_at).toLocaleDateString('ru-RU')}
+                  </Text>
                 </View>
-              ))
-            )}
-          </View>
-        </ScrollView>
+                <Text style={styles.commentContent}>{comment.content}</Text>
+              </View>
+            ))}
 
-        {/* Comment Input */}
-        {user && (
-          <View style={styles.commentInputContainer}>
-            <TextInput
-              style={styles.commentInput}
-              value={newComment}
-              onChangeText={setNewComment}
-              placeholder="Написать комментарий..."
-              placeholderTextColor="#666"
-              multiline
-              maxLength={500}
-            />
-            <TouchableOpacity
-              style={[styles.sendButton, (!newComment.trim() || isSubmittingComment) && styles.sendButtonDisabled]}
-              onPress={handleAddComment}
-              disabled={!newComment.trim() || isSubmittingComment}
-            >
-              {isSubmittingComment ? (
-                <ActivityIndicator size="small" color="#4ecdc4" />
-              ) : (
-                <Ionicons name="send" size={20} color="#4ecdc4" />
-              )}
-            </TouchableOpacity>
+            <View style={styles.addCommentSection}>
+              <TextInput
+                style={styles.commentInput}
+                value={newComment}
+                onChangeText={setNewComment}
+                placeholder="Написать комментарий..."
+                placeholderTextColor="#666"
+                multiline
+                maxLength={500}
+              />
+              <TouchableOpacity
+                style={[styles.submitButton, !newComment.trim() && styles.submitButtonDisabled]}
+                onPress={handleAddComment}
+                disabled={!newComment.trim() || isSubmittingComment}
+              >
+                {isSubmittingComment ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Ionicons name="send" size={20} color="#fff" />
+                )}
+              </TouchableOpacity>
+            </View>
           </View>
         )}
       </KeyboardAvoidingView>
@@ -425,27 +376,17 @@ export default function PostDetail() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0c0c0c',
-  },
-  keyboardContainer: {
-    flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? 8 : 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
     borderBottomColor: '#333',
-    backgroundColor: '#0c0c0c',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
@@ -463,10 +404,11 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  postContainer: {
+  postCard: {
     backgroundColor: '#1a1a1a',
-    margin: 16,
-    padding: 20,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: '#333',
@@ -475,101 +417,71 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-  },
-  authorName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4ecdc4',
-  },
-  postDate: {
-    fontSize: 12,
-    color: '#666',
-  },
-  postTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
     marginBottom: 12,
   },
-  postContent: {
+  author: {
     fontSize: 16,
-    color: '#ccc',
-    lineHeight: 24,
-    marginBottom: 16,
+    fontWeight: 'bold',
+    color: '#4ecdc4',
   },
-  imagesContainer: {
-    marginBottom: 16,
+  timestamp: {
+    fontSize: 14,
+    color: '#666',
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  content: {
+    fontSize: 16,
+    color: '#e0e0e0',
+    lineHeight: 24,
+    marginBottom: 12,
   },
   postImage: {
-    width: 200,
-    height: 120,
+    width: '100%',
+    height: 200,
     borderRadius: 8,
-    marginRight: 12,
+    marginBottom: 12,
   },
   tagsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   tag: {
-    backgroundColor: '#333',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 8,
-    marginBottom: 8,
-  },
-  tagText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#4ecdc4',
+    marginRight: 8,
+    marginBottom: 4,
   },
   postStats: {
     borderTopWidth: 1,
     borderTopColor: '#333',
     paddingTop: 12,
   },
-  statsItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   statsText: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 8,
   },
   commentsSection: {
     margin: 16,
   },
-  sectionTitle: {
+  commentsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 16,
   },
-  emptyComments: {
-    alignItems: 'center',
-    paddingVertical: 40,
-  },
-  emptyCommentsText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginTop: 12,
-  },
-  emptyCommentsSubtext: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
-    textAlign: 'center',
-  },
   commentCard: {
     backgroundColor: '#1a1a1a',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#333',
+    marginBottom: 8,
   },
   commentHeader: {
     flexDirection: 'row',
@@ -579,60 +491,68 @@ const styles = StyleSheet.create({
   },
   commentAuthor: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#4ecdc4',
   },
-  commentContent: {
-    fontSize: 14,
-    color: '#ccc',
-    lineHeight: 20,
-    marginBottom: 8,
-  },
-  commentDate: {
+  commentTimestamp: {
     fontSize: 12,
     color: '#666',
   },
-  commentInputContainer: {
+  commentContent: {
+    fontSize: 14,
+    color: '#e0e0e0',
+    lineHeight: 20,
+  },
+  addCommentSection: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#1a1a1a',
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: '#333',
   },
   commentInput: {
     flex: 1,
-    backgroundColor: '#333',
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    marginRight: 12,
-    fontSize: 14,
+    paddingVertical: 12,
     color: '#fff',
-    maxHeight: 80,
+    fontSize: 16,
+    maxHeight: 100,
+    marginRight: 8,
   },
-  sendButton: {
+  submitButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#333',
+    backgroundColor: '#4ecdc4',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  sendButtonDisabled: {
-    opacity: 0.5,
+  submitButtonDisabled: {
+    backgroundColor: '#333',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#0c0c0c',
   },
   loadingText: {
     fontSize: 16,
     color: '#666',
     marginTop: 16,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
   },
   modalOverlay: {
     flex: 1,
@@ -665,14 +585,5 @@ const styles = StyleSheet.create({
     borderTopColor: '#333',
     marginTop: 8,
     justifyContent: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#fff',
   },
 });

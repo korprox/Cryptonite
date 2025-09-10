@@ -7,15 +7,16 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  ActivityIndicator,
   SafeAreaView,
   StatusBar,
+  Image,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { router } from 'expo-router';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../components/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -25,58 +26,38 @@ export default function CreatePost() {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [tags, setTags] = useState('');
-  const [images, setImages] = useState<string[]>([]);
+  const [imageBase64, setImageBase64] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const handlePickImage = async () => {
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (permissionResult.granted === false) {
-        Alert.alert('Ошибка', 'Необходимо разрешение для доступа к галерее');
-        return;
-      }
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 0.8,
+      base64: true,
+    });
 
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [16, 9],
-        quality: 0.5,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets[0].base64) {
-        if (images.length >= 3) {
-          Alert.alert('Ограничение', 'Можно добавить максимум 3 изображения');
-          return;
-        }
-        setImages([...images, `data:image/jpeg;base64,${result.assets[0].base64}`]);
-      }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Ошибка', 'Не удалось выбрать изображение');
+    if (!result.canceled && result.assets[0].base64) {
+      setImageBase64(result.assets[0].base64);
     }
   };
 
-  const removeImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index));
+  const removeImage = () => {
+    setImageBase64('');
   };
 
   const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert('Ошибка', 'Введите заголовок поста');
-      return;
-    }
-
     if (!content.trim()) {
-      Alert.alert('Ошибка', 'Введите содержание поста');
+      Alert.alert('Ошибка', 'Пожалуйста, введите содержание поста');
       return;
     }
 
     if (!user?.token) {
-      Alert.alert('Ошибка', 'Необходимо войти в систему');
+      Alert.alert('Ошибка', 'Вы не авторизованы');
       return;
     }
 
@@ -88,27 +69,29 @@ export default function CreatePost() {
         .map(tag => tag.trim())
         .filter(tag => tag.length > 0);
 
-      const response = await fetch(`${API_BASE_URL}/api/posts`, {
+      const response = await fetch(`${API_BASE_URL}/posts`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
         },
         body: JSON.stringify({
-          title: title.trim(),
+          title: title.trim() || undefined,
           content: content.trim(),
-          images,
           tags: tagsArray,
+          image_base64: imageBase64 || undefined,
         }),
       });
 
       if (response.ok) {
-        Alert.alert('Успех', 'Пост опубликован!', [
-          { text: 'OK', onPress: () => router.back() }
+        const newPost = await response.json();
+        Alert.alert('Успех', 'Пост создан!', [
+          { text: 'OK', onPress: () => router.push(`/post/${newPost.id}`) }
         ]);
       } else {
-        const errorData = await response.json();
-        Alert.alert('Ошибка', errorData.detail || 'Не удалось создать пост');
+        const errorData = await response.text();
+        console.error('Error creating post:', errorData);
+        Alert.alert('Ошибка', 'Не удалось создать пост');
       }
     } catch (error) {
       console.error('Error creating post:', error);
@@ -118,126 +101,92 @@ export default function CreatePost() {
     }
   };
 
-  const getTopPadding = () => {
-    if (Platform.OS === 'android') {
-      return (StatusBar.currentHeight || 0) + 10;
-    }
-    return insets.top;
-  };
-
   return (
-    <View style={[styles.container, { paddingTop: getTopPadding() }]}>
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+      <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Создать пост</Text>
+        <TouchableOpacity
+          style={[styles.publishButton, (!content.trim() || isSubmitting) && styles.publishButtonDisabled]}
+          onPress={handleSubmit}
+          disabled={!content.trim() || isSubmitting}
+        >
+          {isSubmitting ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.publishButtonText}>Опубликовать</Text>
+          )}
+        </TouchableOpacity>
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardContainer}
+        style={{ flex: 1 }}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Новый пост</Text>
-          <TouchableOpacity
-            style={[styles.submitButton, (!title.trim() || !content.trim() || isSubmitting) && styles.submitButtonDisabled]}
-            onPress={handleSubmit}
-            disabled={!title.trim() || !content.trim() || isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator size="small" color="#4ecdc4" />
-            ) : (
-              <Text style={styles.submitButtonText}>Опубликовать</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Title Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Заголовок</Text>
+        <ScrollView style={styles.content}>
+          <View style={styles.form}>
             <TextInput
               style={styles.titleInput}
               value={title}
               onChangeText={setTitle}
-              placeholder="О чем ваш пост?"
+              placeholder="Заголовок (необязательно)"
               placeholderTextColor="#666"
               maxLength={100}
             />
-            <Text style={styles.characterCount}>{title.length}/100</Text>
-          </View>
 
-          {/* Content Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Содержание</Text>
             <TextInput
               style={styles.contentInput}
               value={content}
               onChangeText={setContent}
-              placeholder="Поделитесь своими мыслями, опытом или историей..."
+              placeholder="О чем вы думаете?"
               placeholderTextColor="#666"
               multiline
               textAlignVertical="top"
               maxLength={2000}
             />
-            <Text style={styles.characterCount}>{content.length}/2000</Text>
-          </View>
 
-          {/* Tags Input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Теги (через запятую)</Text>
             <TextInput
               style={styles.tagsInput}
               value={tags}
               onChangeText={setTags}
-              placeholder="поддержка, история, совет"
+              placeholder="Теги (через запятую)"
               placeholderTextColor="#666"
-              maxLength={100}
+              maxLength={200}
             />
-          </View>
 
-          {/* Images Section */}
-          <View style={styles.imagesContainer}>
-            <View style={styles.imagesHeader}>
-              <Text style={styles.inputLabel}>Изображения ({images.length}/3)</Text>
-              <TouchableOpacity
-                style={styles.addImageButton}
-                onPress={handlePickImage}
-                disabled={images.length >= 3}
-              >
-                <Ionicons name="add" size={20} color="#4ecdc4" />
-                <Text style={styles.addImageText}>Добавить</Text>
+            {imageBase64 ? (
+              <View style={styles.imageContainer}>
+                <Image
+                  source={{ uri: `data:image/jpeg;base64,${imageBase64}` }}
+                  style={styles.selectedImage}
+                  resizeMode="cover"
+                />
+                <TouchableOpacity
+                  style={styles.removeImageButton}
+                  onPress={removeImage}
+                >
+                  <Ionicons name="close-circle" size={24} color="#ff6b6b" />
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <TouchableOpacity style={styles.imagePickerButton} onPress={pickImage}>
+                <Ionicons name="image" size={24} color="#4ecdc4" />
+                <Text style={styles.imagePickerText}>Добавить изображение</Text>
               </TouchableOpacity>
-            </View>
-            
-            {images.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <View style={styles.imagesPreview}>
-                  {images.map((imageUri, index) => (
-                    <View key={index} style={styles.imagePreviewContainer}>
-                      <TouchableOpacity
-                        style={styles.removeImageButton}
-                        onPress={() => removeImage(index)}
-                      >
-                        <Ionicons name="close" size={16} color="#fff" />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              </ScrollView>
             )}
-          </View>
 
-          {/* Guidelines */}
-          <View style={styles.guidelines}>
-            <Text style={styles.guidelinesTitle}>Правила сообщества:</Text>
-            <Text style={styles.guidelinesText}>
-              • Будьте уважительны к другим участникам{'\n'}
-              • Не публикуйте личную информацию{'\n'}
-              • Избегайте оскорблений и угроз{'\n'}
-              • Помогайте и поддерживайте друг друга
-            </Text>
+            <View style={styles.guidelines}>
+              <Text style={styles.guidelinesTitle}>Правила сообщества:</Text>
+              <Text style={styles.guidelinesText}>
+                • Будьте уважительны к другим участникам{'\n'}
+                • Не публикуйте личную информацию{'\n'}
+                • Избегайте оскорблений и угроз{'\n'}
+                • Помните о поддержке и взаимопомощи
+              </Text>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -248,61 +197,42 @@ export default function CreatePost() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0c0c0c',
-  },
-  keyboardContainer: {
-    flex: 1,
+    backgroundColor: '#0a0a0a',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    paddingTop: Platform.OS === 'android' ? 8 : 20,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#1a1a1a',
     borderBottomWidth: 1,
     borderBottomColor: '#333',
-    backgroundColor: '#0c0c0c',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#fff',
   },
-  submitButton: {
+  publishButton: {
+    backgroundColor: '#4ecdc4',
     paddingHorizontal: 16,
     paddingVertical: 8,
-    backgroundColor: '#4ecdc4',
     borderRadius: 20,
-    minWidth: 100,
-    alignItems: 'center',
   },
-  submitButtonDisabled: {
+  publishButtonDisabled: {
     backgroundColor: '#333',
   },
-  submitButtonText: {
+  publishButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
     fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
   },
   content: {
     flex: 1,
-    padding: 20,
   },
-  inputContainer: {
-    marginBottom: 24,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 8,
+  form: {
+    padding: 16,
   },
   titleInput: {
     backgroundColor: '#1a1a1a',
@@ -310,9 +240,10 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
     color: '#fff',
-    minHeight: 50,
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
   },
   contentInput: {
     backgroundColor: '#1a1a1a',
@@ -320,9 +251,10 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
     color: '#fff',
+    fontSize: 16,
     minHeight: 120,
+    marginBottom: 16,
   },
   tagsInput: {
     backgroundColor: '#1a1a1a',
@@ -330,83 +262,59 @@ const styles = StyleSheet.create({
     borderColor: '#333',
     borderRadius: 12,
     padding: 16,
-    fontSize: 16,
     color: '#fff',
-    minHeight: 50,
+    fontSize: 16,
+    marginBottom: 16,
   },
-  characterCount: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'right',
-    marginTop: 4,
-  },
-  imagesContainer: {
-    marginBottom: 24,
-  },
-  imagesHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  addImageButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#4ecdc4',
-  },
-  addImageText: {
-    fontSize: 12,
-    color: '#4ecdc4',
-    marginLeft: 4,
-  },
-  imagesPreview: {
-    flexDirection: 'row',
-  },
-  imagePreviewContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    marginRight: 8,
+  imageContainer: {
     position: 'relative',
-    borderWidth: 1,
-    borderColor: '#333',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: 16,
+  },
+  selectedImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 12,
   },
   removeImageButton: {
     position: 'absolute',
-    top: -6,
-    right: -6,
-    width: 20,
-    height: 20,
-    backgroundColor: '#ff6b6b',
-    borderRadius: 10,
-    justifyContent: 'center',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 12,
+  },
+  imagePickerButton: {
+    backgroundColor: '#1a1a1a',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 12,
+    padding: 16,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  imagePickerText: {
+    color: '#4ecdc4',
+    fontSize: 16,
+    marginLeft: 8,
   },
   guidelines: {
     backgroundColor: '#1a1a1a',
-    padding: 16,
-    borderRadius: 12,
     borderWidth: 1,
     borderColor: '#333',
-    marginBottom: 40,
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 16,
   },
   guidelinesTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: 'bold',
     color: '#4ecdc4',
     marginBottom: 8,
   },
   guidelinesText: {
-    fontSize: 12,
-    color: '#ccc',
-    lineHeight: 18,
+    fontSize: 14,
+    color: '#e0e0e0',
+    lineHeight: 20,
   },
 });
