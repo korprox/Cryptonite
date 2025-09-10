@@ -146,13 +146,43 @@ export default function PostDetail() {
         { text: 'Отмена', style: 'cancel' },
         { 
           text: 'Написать автору', 
-          onPress: () => {
-            Alert.alert('Функция в разработке', 'Личные сообщения будут доступны в следующей версии');
-          }
+          onPress: () => createChatWithAuthor()
         },
         { text: 'Пожаловаться', onPress: () => handleReport('post', post.id) },
       ]
     );
+  };
+
+  const createChatWithAuthor = async () => {
+    if (!user?.token || !post) return;
+
+    if (post.author_id === user.id) {
+      Alert.alert('Информация', 'Это ваш собственный пост');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chats`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${user.token}`,
+        },
+        body: JSON.stringify({
+          receiver_id: post.author_id,
+        }),
+      });
+
+      if (response.ok) {
+        const chatData = await response.json();
+        router.push(`/chat/${chatData.id}`);
+      } else {
+        Alert.alert('Ошибка', 'Не удалось создать чат');
+      }
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      Alert.alert('Ошибка', 'Не удалось создать чат');
+    }
   };
 
   const handleReport = (targetType: string, targetId: string) => {
