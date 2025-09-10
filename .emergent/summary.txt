@@ -1,0 +1,74 @@
+<analysis>
+The AI engineer successfully brought the Kryptonite application from 0 to 1, as an MVP. Subsequent interactions focused on debugging reported issues and architectural discussions. Initial tasks involved confirming the plan, followed by testing the backend, which passed. A critical server error (due to  and WebRTC conflicts) led to extensive dependency debugging, culminating in temporarily disabling WebRTC. The write to author function was fixed by replacing  with a custom modal and correcting API URL configuration, along with enabling message sending via the Enter key. Post creation had issues with the '+' button not working and the screen not closing; the button was fixed, but the post-creation redirect and API URL resolution remained problematic. The AI engineer attempted to re-integrate WebRTC multiple times, but consistently faced import errors, leading to its re-disabling for the web version. The user introduced new architectural requirements: backend separation into a dedicated project for Kubernetes/Docker deployment and migrating the database to PostgreSQL. The current state reflects ongoing debugging of API URL paths and post-creation flow.
+</analysis>
+
+<product_requirements>
+The Kryptonite application is a cross-platform (iOS 14.0+, Android 10+) mobile app for anonymous sharing and support. Its core features include full anonymity with temporary IDs, post creation (text, base64 images, tags), anonymous commenting, private messaging (end-to-end encrypted) initiated by Write to Author, and anonymous WebRTC audio calls (time-limited) within PMs. The design emphasizes a minimalist, dark palette with intuitive tab-based navigation. A moderation system for reporting and blocking content/users is planned. The application is built with Expo React Native (frontend) and FastAPI with MongoDB (backend). The user explicitly requested to separate the backend into a dedicated project for Kubernetes/Docker deployment and migrate the database to PostgreSQL.
+</product_requirements>
+
+<key_technical_concepts>
+- **Frontend**: Expo React Native, Expo Router, React Navigation, Zustand, , ,  (disabled for web), .
+- **Backend**: FastAPI, MongoDB (to be migrated), PyJWT.
+- **Architecture**: Full-stack, RESTful API, JWT auth, WebRTC (partially disabled), base64 for images.
+</key_technical_concepts>
+
+<code_architecture>
+The project is a monorepo with  and  directories.
+
+
+
+- :
+    - **Importance**: Core FastAPI backend defining APIs and MongoDB models.
+    - **Changes Made**: Bug fixes for chat creation, general stability during debugging phases. API endpoints were confirmed working.
+- :
+    - **Importance**: Root layout, , .
+    - **Changes Made**:  specific  for  and  for Safe Area.
+- :
+    - **Importance**: Initial entry, redirects to  post-auth.
+    - **Changes Made**: Logic for  check and redirect.
+- :
+    - **Importance**: Main tab-based navigation.
+    - **Changes Made**: Configured , integrated , , , and adjusted header styles for Safe Area.
+- :
+    - **Importance**: Screen for post creation (text, image).
+    - **Changes Made**: Initial implementation, . Changed  within  to  directly after successful post creation for better flow. API call URLs corrected by removing duplicate .
+- :
+    - **Importance**: View single post, comments, interact with author.
+    - **Changes Made**: Initial implementation.  for three dots menu, Write to Author button functional. Replaced  with a custom modal for menu options to fix web display issues. API call URLs corrected by removing duplicate . Syntax errors in JSX were fixed.
+- :
+    - **Importance**: Displays chat, handles messages and WebRTC calls.
+    - **Changes Made**: Implements message display/send. WebRTC integration was added, then temporarily removed/commented out multiple times due to  conflicts and web compatibility. API call URLs corrected by removing duplicate . Send message button enhanced with  for Enter, and its  behavior debugged.
+- :
+    - **Importance**: Provides anonymous user authentication.
+    - **Changes Made**:  function,  for  and . API call URLs corrected by removing duplicate .
+- :
+    - **Importance**: Displays post feed.
+    - **Changes Made**: Displayed posts from backend. Fixed create post (+) button visibility and interactivity (modified ). Adjusted header styles for Safe Area. API call URLs corrected by removing duplicate .
+- :
+    - **Importance**: Lists active chats.
+    - **Changes Made**: Fetches and displays chats. Adjusted header styles. API call URLs corrected by removing duplicate .
+- :
+    - **Importance**: Displays user ID, settings.
+    - **Changes Made**: Buttons for About App, Privacy, etc. Adjusted header styles. API call URLs corrected by removing duplicate .
+- :
+    - **Importance**: Environment variables, including API URLs.
+    - **Changes Made**:  was changed multiple times: from  to  (then to  for web, then blank, then back to ) to resolve network request errors due to environment forks and web-specific routing.
+</code_architecture>
+
+<pending_tasks>
+- **Phase 5: Moderation System**: Admin panel, content/user blocking, logging moderation actions.
+- **Frontend Enhancements**: Search by tags, notification system, advanced UI/UX animations/transitions, themes.
+- **Performance Optimization**: Caching, post pagination, image optimization.
+- **Backend Architecture Refactor**: Separate backend into a dedicated project (Kubernetes/Docker).
+- **Database Migration**: Migrate from MongoDB to PostgreSQL.
+- **WebRTC Call Feature**: Re-enable and stabilize WebRTC for audio calls, especially for web compatibility.
+</pending_tasks>
+
+<current_work>
+The AI engineer is currently addressing a persistent issue where the create post screen does not reliably close after a successful post submission, despite  being implemented. This is intertwined with ongoing debugging of API URL configuration in the frontend, as network requests sometimes return 404 errors due to incorrect base paths (e.g., ). The  in  is a key focus for this, as it has been a source of repeated issues due to environment forks and web platform differences.
+Simultaneously, the user has introduced new, significant architectural requirements concerning the backend. These include separating the backend into a dedicated project for deployment in Kubernetes/Docker and migrating the database from MongoDB to PostgreSQL. The AI engineer is in the process of formulating a plan to address these architectural changes alongside the outstanding frontend bugs.
+</current_work>
+
+<optional_next_step>
+Formulate a plan to address the architectural requests (backend separation, PostgreSQL migration) and the persistent post-creation screen closing issue.
+</optional_next_step>
