@@ -457,6 +457,8 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
   },
   content: {
     flex: 1,
