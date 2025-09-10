@@ -20,6 +20,12 @@ class KriptonitAPITester:
         self.test_user_id = None
         self.test_post_id = None
         self.test_comment_id = None
+        # Phase 4: Chat and Call testing variables
+        self.auth_token_2 = None
+        self.test_user_id_2 = None
+        self.test_chat_id = None
+        self.test_message_id = None
+        self.test_call_id = None
         self.results = []
         
     def log_result(self, test_name, success, message, details=None):
