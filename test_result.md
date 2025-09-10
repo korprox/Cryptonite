@@ -362,3 +362,5 @@ test_plan:
 agent_communication:
   - agent: "testing"
     message: "Comprehensive backend API testing completed successfully. All 15 test cases passed (100% success rate). Created backend_test.py for automated testing. All endpoints working correctly: health check, anonymous auth, posts CRUD, comments, reports, and MongoDB integration. No critical issues found. Backend is production-ready."
+  - agent: "testing"
+    message: "Comprehensive mobile frontend testing completed on iPhone 13/14 viewport (390x844). RESULTS: ✅ 7/8 major features working perfectly. App loads correctly, anonymous user creation works ('Автор #11' format), bottom tab navigation smooth, posts feed displays 5 posts with proper formatting, post detail view excellent with comments section, chats empty state perfect, profile tab complete with all menu items, dark theme (#0c0c0c) and teal accent (#4ecdc4) implemented perfectly. ❌ CRITICAL ISSUE: Create post button (+) not accessible from mobile interface - blocks post creation functionality. This needs immediate attention."
