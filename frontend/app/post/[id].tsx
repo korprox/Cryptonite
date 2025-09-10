@@ -261,9 +261,10 @@ export default function PostDetail() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Пост</Text>
           <TouchableOpacity
-            style={styles.menuButton}
+            style={[styles.menuButton, { zIndex: 1000 }]}
             onPress={handlePostMenu}
             activeOpacity={0.7}
+            accessibilityLabel="Menu"
           >
             <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
           </TouchableOpacity>
