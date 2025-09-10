@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView, StyleSheet } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PostsTab from '../components/tabs/PostsTab';
 import ChatsTab from '../components/tabs/ChatsTab';
@@ -10,17 +11,19 @@ import ProfileTab from '../components/tabs/ProfileTab';
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
+  const insets = useSafeAreaInsets();
+  
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
             backgroundColor: '#1a1a1a',
             borderTopColor: '#333',
-            height: 60,
+            height: 60 + insets.bottom,
             paddingTop: 5,
-            paddingBottom: 8,
+            paddingBottom: insets.bottom + 8,
           },
           tabBarActiveTintColor: '#4ecdc4',
           tabBarInactiveTintColor: '#666',
@@ -57,7 +60,7 @@ export default function MainTabs() {
           }}
         />
       </Tab.Navigator>
-    </SafeAreaView>
+    </View>
   );
 }
 
