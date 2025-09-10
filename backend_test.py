@@ -957,6 +957,7 @@ class KriptonitAPITester:
         
         # Test sequence
         tests = [
+            # Phase 1: Basic functionality (already tested)
             self.test_health_check,
             self.test_create_anonymous_user,
             self.test_get_current_user,
@@ -971,7 +972,24 @@ class KriptonitAPITester:
             self.test_get_comments,
             self.test_create_report,
             self.test_create_report_without_token,
-            self.test_validation_empty_post
+            self.test_validation_empty_post,
+            
+            # Phase 4: Chat and Audio Call functionality
+            self.test_create_second_anonymous_user,
+            self.test_create_chat,
+            self.test_get_user_chats,
+            self.test_send_message,
+            self.test_get_chat_messages,
+            self.test_create_call_request,
+            self.test_respond_to_call_accept,
+            self.test_webrtc_offer,
+            self.test_webrtc_get_offer,
+            self.test_webrtc_answer,
+            self.test_webrtc_get_answer,
+            self.test_webrtc_ice_candidate,
+            self.test_webrtc_get_ice_candidates,
+            self.test_end_call,
+            self.test_chat_authorization
         ]
         
         passed = 0
