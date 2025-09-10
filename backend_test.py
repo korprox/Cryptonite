@@ -13,7 +13,7 @@ import os
 from datetime import datetime
 
 # Get backend URL from environment
-BACKEND_URL = "https://secret-space.preview.emergentagent.com/api"
+BACKEND_URL = "https://kryptonite-chat.preview.emergentagent.com/api"
 
 class KriptonitAPITester:
     def __init__(self):
