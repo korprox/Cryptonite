@@ -27,16 +27,16 @@ interface Post {
 }
 
 export default function PostsTab() {
-  const [posts, setPosts] = useState&lt;Post[]&gt;([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { isAuthenticated } = useAuth();
 
-  useEffect(() =&gt; {
+  useEffect(() => {
     fetchPosts();
   }, []);
 
-  const fetchPosts = async () =&gt; {
+  const fetchPosts = async () => {
     try {
       const response = await api.get('/posts');
       if (response.ok) {
@@ -51,13 +51,13 @@ export default function PostsTab() {
     }
   };
 
-  const onRefresh = async () =&gt; {
+  const onRefresh = async () => {
     setRefreshing(true);
     await fetchPosts();
     setRefreshing(false);
   };
 
-  const formatDate = (dateString: string) =&gt; {
+  const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -65,81 +65,81 @@ export default function PostsTab() {
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMinutes &lt; 1) return 'Только что';
-    if (diffMinutes &lt; 60) return `${diffMinutes} мин назад`;
-    if (diffHours &lt; 24) return `${diffHours} ч назад`;
-    if (diffDays &lt; 7) return `${diffDays} дн назад`;
+    if (diffMinutes < 1) return 'Только что';
+    if (diffMinutes < 60) return `${diffMinutes} мин назад`;
+    if (diffHours < 24) return `${diffHours} ч назад`;
+    if (diffDays < 7) return `${diffDays} дн назад`;
     
     return date.toLocaleDateString('ru-RU');
   };
 
-  const renderPost = ({ item }: { item: Post }) =&gt; (
-    &lt;TouchableOpacity
+  const renderPost = ({ item }: { item: Post }) => (
+    <TouchableOpacity
       style={styles.postCard}
-      onPress={() =&gt; router.push(`/post/${item.id}`)}
+      onPress={() => router.push(`/post/${item.id}`)}
       activeOpacity={0.7}
-    &gt;
-      &lt;View style={styles.postHeader}&gt;
-        &lt;Text style={styles.authorName}&gt;{item.author_display_name}&lt;/Text&gt;
-        &lt;Text style={styles.postDate}&gt;{formatDate(item.created_at)}&lt;/Text&gt;
-      &lt;/View&gt;
+    >
+      <View style={styles.postHeader}>
+        <Text style={styles.authorName}>{item.author_display_name}</Text>
+        <Text style={styles.postDate}>{formatDate(item.created_at)}</Text>
+      </View>
       
-      &lt;Text style={styles.postTitle}&gt;{item.title}&lt;/Text&gt;
-      &lt;Text style={styles.postContent} numberOfLines={3}&gt;
+      <Text style={styles.postTitle}>{item.title}</Text>
+      <Text style={styles.postContent} numberOfLines={3}>
         {item.content}
-      &lt;/Text&gt;
+      </Text>
       
-      {item.tags.length &gt; 0 &amp;&amp; (
-        &lt;View style={styles.tagsContainer}&gt;
-          {item.tags.slice(0, 3).map((tag, index) =&gt; (
-            &lt;View key={index} style={styles.tag}&gt;
-              &lt;Text style={styles.tagText}&gt;#{tag}&lt;/Text&gt;
-            &lt;/View&gt;
+      {item.tags.length > 0 && (
+        <View style={styles.tagsContainer}>
+          {item.tags.slice(0, 3).map((tag, index) => (
+            <View key={index} style={styles.tag}>
+              <Text style={styles.tagText}>#{tag}</Text>
+            </View>
           ))}
-        &lt;/View&gt;
+        </View>
       )}
       
-      &lt;View style={styles.postFooter}&gt;
-        &lt;View style={styles.statsContainer}&gt;
-          &lt;Ionicons name="chatbubble-outline" size={16} color="#666" /&gt;
-          &lt;Text style={styles.statsText}&gt;{item.comments_count}&lt;/Text&gt;
-        &lt;/View&gt;
-        {item.images.length &gt; 0 &amp;&amp; (
-          &lt;View style={styles.statsContainer}&gt;
-            &lt;Ionicons name="image-outline" size={16} color="#666" /&gt;
-            &lt;Text style={styles.statsText}&gt;{item.images.length}&lt;/Text&gt;
-          &lt;/View&gt;
+      <View style={styles.postFooter}>
+        <View style={styles.statsContainer}>
+          <Ionicons name="chatbubble-outline" size={16} color="#666" />
+          <Text style={styles.statsText}>{item.comments_count}</Text>
+        </View>
+        {item.images.length > 0 && (
+          <View style={styles.statsContainer}>
+            <Ionicons name="image-outline" size={16} color="#666" />
+            <Text style={styles.statsText}>{item.images.length}</Text>
+          </View>
         )}
-      &lt;/View&gt;
-    &lt;/TouchableOpacity&gt;
+      </View>
+    </TouchableOpacity>
   );
 
-  const renderEmptyState = () =&gt; (
-    &lt;View style={styles.emptyState}&gt;
-      &lt;Ionicons name="newspaper-outline" size={64} color="#333" /&gt;
-      &lt;Text style={styles.emptyTitle}&gt;Пока нет постов&lt;/Text&gt;
-      &lt;Text style={styles.emptySubtitle}&gt;
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <Ionicons name="newspaper-outline" size={64} color="#333" />
+      <Text style={styles.emptyTitle}>Пока нет постов</Text>
+      <Text style={styles.emptySubtitle}>
         Станьте первым, кто поделится своей историей
-      &lt;/Text&gt;
-    &lt;/View&gt;
+      </Text>
+    </View>
   );
 
   if (isLoading) {
     return (
-      &lt;View style={styles.loadingContainer}&gt;
-        &lt;ActivityIndicator size="large" color="#4ecdc4" /&gt;
-        &lt;Text style={styles.loadingText}&gt;Загружаем посты...&lt;/Text&gt;
-      &lt;/View&gt;
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4ecdc4" />
+        <Text style={styles.loadingText}>Загружаем посты...</Text>
+      </View>
     );
   }
 
   return (
-    &lt;View style={styles.container}&gt;
-      &lt;View style={styles.header}&gt;
-        &lt;Text style={styles.headerTitle}&gt;Криптонит&lt;/Text&gt;
-        &lt;TouchableOpacity
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>Криптонит</Text>
+        <TouchableOpacity
           style={[styles.createButton, { zIndex: 1000 }]}
-          onPress={() =&gt; {
+          onPress={() => {
             console.log('Create post button clicked!');
             try {
               router.push('/create-post');
@@ -150,28 +150,28 @@ export default function PostsTab() {
           }}
           activeOpacity={0.7}
           accessibilityLabel="Create post"
-        &gt;
-          &lt;Ionicons name="add" size={24} color="#4ecdc4" /&gt;
-        &lt;/TouchableOpacity&gt;
-      &lt;/View&gt;
+        >
+          <Ionicons name="add" size={24} color="#4ecdc4" />
+        </TouchableOpacity>
+      </View>
 
-      &lt;FlatList
+      <FlatList
         data={posts}
         renderItem={renderPost}
-        keyExtractor={(item) =&gt; item.id}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          &lt;RefreshControl
+          <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#4ecdc4"
             colors={['#4ecdc4']}
-          /&gt;
+          />
         }
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-      /&gt;
-    &lt;/View&gt;
+      />
+    </View>
   );
 }
 

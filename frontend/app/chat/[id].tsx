@@ -16,12 +16,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../utils/api';
+
 // WebRTC is temporarily disabled for web compatibility
 // Audio calls will be available in mobile version only
-const RTCPeerConnection: any = null;
-const RTCIceCandidate: any = null; 
-const RTCSessionDescription: any = null;
-const mediaDevices: any = null;
+const RTCPeerConnectionAny: any = (global as any).RTCPeerConnection || null;
+const mediaDevicesAny: any = (global as any).navigator?.mediaDevices || null;
 
 interface Message {
   id: string;
@@ -40,8 +40,6 @@ interface CallRequest {
   status: string;
   created_at: string;
 }
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
 // WebRTC configuration
 const pcConfig = {
@@ -63,7 +61,6 @@ export default function ChatScreen() {
   
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  // const peerConnection = useRef<RTCPeerConnection | null>(null);
   const peerConnection = useRef<any>(null);
   const callTimer = useRef<NodeJS.Timeout | null>(null);
   const callStartTime = useRef<Date | null>(null);
@@ -85,8 +82,8 @@ export default function ChatScreen() {
   }, [chatId, user]);
 
   useEffect(() => {
-    // Initialize WebRTC peer connection
-    if (user) {
+    // Initialize WebRTC peer connection only if available
+    if (user && RTCPeerConnectionAny) {
       setupPeerConnection();
     }
     
@@ -95,28 +92,24 @@ export default function ChatScreen() {
         clearInterval(callTimer.current);
       }
       if (peerConnection.current) {
-        peerConnection.current.close();
+        try { peerConnection.current.close(); } catch {}
+        peerConnection.current = null;
       }
     };
   }, [user]);
 
   const setupPeerConnection = () => {
-    peerConnection.current = new RTCPeerConnection(pcConfig);
+    if (!RTCPeerConnectionAny) return;
+
+    peerConnection.current = new RTCPeerConnectionAny(pcConfig);
     
-    peerConnection.current.onicecandidate = async (event) => {
+    peerConnection.current.onicecandidate = async (event: any) => {
       if (event.candidate && user?.token) {
         try {
-          await fetch(`${API_BASE_URL}/webrtc/ice-candidate`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${user.token}`,
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              candidate: event.candidate,
-            }),
-          });
+          await api.post('/webrtc/ice-candidate', {
+            chat_id: chatId,
+            candidate: event.candidate,
+          }, user.token);
         } catch (error) {
           console.error('Error sending ICE candidate:', error);
         }
@@ -124,10 +117,11 @@ export default function ChatScreen() {
     };
 
     peerConnection.current.onconnectionstatechange = () => {
-      console.log('Connection state:', peerConnection.current?.connectionState);
-      if (peerConnection.current?.connectionState === 'connected') {
+      const state = peerConnection.current?.connectionState;
+      console.log('Connection state:', state);
+      if (state === 'connected') {
         startCallTimer();
-      } else if (peerConnection.current?.connectionState === 'disconnected') {
+      } else if (state === 'disconnected') {
         endCall();
       }
     };
@@ -137,11 +131,7 @@ export default function ChatScreen() {
     if (!user?.token || !chatId) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
+      const response = await api.get(`/chats/${chatId}/messages`, user.token);
 
       if (response.ok) {
         const data = await response.json();
@@ -161,17 +151,7 @@ export default function ChatScreen() {
     setIsSending(true);
     
     try {
-      console.log('Sending message to:', `${API_BASE_URL}/chats/${chatId}/messages`);
-      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          content: newMessage.trim(),
-        }),
-      });
+      const response = await api.post(`/chats/${chatId}/messages`, { content: newMessage.trim() }, user.token);
 
       console.log('Response status:', response.status);
       if (response.ok) {
@@ -195,45 +175,29 @@ export default function ChatScreen() {
     if (!user?.token) return;
 
     try {
-      // Request microphone permission
-      const stream = await mediaDevices.getUserMedia({ audio: true });
-      
-      // Add audio track to peer connection
-      if (peerConnection.current) {
-        stream.getTracks().forEach(track => {
-          peerConnection.current?.addTrack(track, stream);
-        });
+      // Request microphone permission if available
+      if (mediaDevicesAny) {
+        const stream = await mediaDevicesAny.getUserMedia({ audio: true });
+        // Add audio track to peer connection
+        if (peerConnection.current) {
+          stream.getTracks().forEach((track: any) => {
+            try { peerConnection.current?.addTrack(track, stream); } catch {}
+          });
+        }
       }
 
       // Create call request
-      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/call-request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
+      const response = await api.post(`/chats/${chatId}/call-request`, {}, user.token);
 
       if (response.ok) {
         const callData = await response.json();
         setCallRequest(callData);
         
         // Create and send WebRTC offer
-        if (peerConnection.current) {
+        if (peerConnection.current && RTCPeerConnectionAny) {
           const offer = await peerConnection.current.createOffer();
           await peerConnection.current.setLocalDescription(offer);
-          
-          await fetch(`${API_BASE_URL}/api/webrtc/offer`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${user.token}`,
-            },
-            body: JSON.stringify({
-              chat_id: chatId,
-              offer: offer,
-            }),
-          });
+          await api.post('/webrtc/offer', { chat_id: chatId, offer }, user.token);
         }
         
         Alert.alert('Звонок', 'Запрос на звонок отправлен. Ожидаем ответа...');
@@ -265,12 +229,7 @@ export default function ChatScreen() {
   const endCall = async () => {
     if (callRequest && user?.token) {
       try {
-        await fetch(`${API_BASE_URL}/api/call-requests/${callRequest.id}/end`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${user.token}`,
-          },
-        });
+        await api.post(`/call-requests/${callRequest.id}/end`, {}, user.token);
       } catch (error) {
         console.error('Error ending call:', error);
       }
@@ -282,8 +241,9 @@ export default function ChatScreen() {
     }
     
     if (peerConnection.current) {
-      peerConnection.current.close();
-      setupPeerConnection(); // Setup new connection for future calls
+      try { peerConnection.current.close(); } catch {}
+      peerConnection.current = null;
+      if (RTCPeerConnectionAny) setupPeerConnection(); // Setup new connection for future calls
     }
     
     setIsInCall(false);

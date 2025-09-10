@@ -13,14 +13,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: () => Promise&lt;void&gt;;
-  logout: () => Promise&lt;void&gt;;
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
   isAuthenticated: boolean;
 }
 
-const AuthContext = createContext&lt;AuthContextType | undefined&gt;(undefined);
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () =&gt; {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -33,21 +33,21 @@ interface AuthProviderProps {
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState&lt;User | null&gt;(null);
+  const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user;
 
-  useEffect(() =&gt; {
+  useEffect(() => {
     checkAuthStatus();
   }, []);
 
-  const checkAuthStatus = async () =&gt; {
+  const checkAuthStatus = async () => {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       const userData = await AsyncStorage.getItem('user_data');
       
-      if (token &amp;&amp; userData) {
+      if (token && userData) {
         const parsedUser = JSON.parse(userData);
         setUser({ ...parsedUser, token });
       } else {
@@ -62,7 +62,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const login = async () =&gt; {
+  const login = async () => {
     try {
       setIsLoading(true);
       
@@ -90,7 +90,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = async () =&gt; {
+  const logout = async () => {
     try {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user_data');
@@ -104,8 +104,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    &lt;AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated }}&gt;
+    <AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated }}>
       {children}
-    &lt;/AuthContext.Provider&gt;
+    </AuthContext.Provider>
   );
 }

@@ -40,9 +40,9 @@ interface Comment {
 }
 
 export default function PostDetail() {
-  const { id } = useLocalSearchParams&lt;{ id: string }&gt;();
-  const [post, setPost] = useState&lt;Post | null&gt;(null);
-  const [comments, setComments] = useState&lt;Comment[]&gt;([]);
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const [post, setPost] = useState<Post | null>(null);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -51,14 +51,14 @@ export default function PostDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  useEffect(() =&gt; {
+  useEffect(() => {
     if (id) {
       fetchPost();
       fetchComments();
     }
   }, [id]);
 
-  const fetchPost = async () =&gt; {
+  const fetchPost = async () => {
     try {
       const response = await api.get(`/posts/${id}`);
       if (response.ok) {
@@ -70,7 +70,7 @@ export default function PostDetail() {
     }
   };
 
-  const fetchComments = async () =&gt; {
+  const fetchComments = async () => {
     try {
       const response = await api.get(`/posts/${id}/comments`);
       if (response.ok) {
@@ -84,7 +84,7 @@ export default function PostDetail() {
     }
   };
 
-  const handleAddComment = async () =&gt; {
+  const handleAddComment = async () => {
     if (!newComment.trim() || !user?.token) return;
 
     setIsSubmittingComment(true);
@@ -103,16 +103,16 @@ export default function PostDetail() {
     }
   };
 
-  const handlePostMenu = () =&gt; {
+  const handlePostMenu = () => {
     console.log('Menu button clicked!');
     setShowMenu(true);
   };
 
-  const closeMenu = () =&gt; {
+  const closeMenu = () => {
     setShowMenu(false);
   };
 
-  const createChatWithAuthor = async () =&gt; {
+  const createChatWithAuthor = async () => {
     if (!user?.token || !post) return;
 
     if (post.author_id === user.id) {
@@ -137,7 +137,7 @@ export default function PostDetail() {
     }
   };
 
-  const handleReport = async (target_type: 'post' | 'comment', itemId: string) =&gt; {
+  const handleReport = async (target_type: 'post' | 'comment', itemId: string) => {
     if (!user?.token) return;
 
     try {
@@ -163,117 +163,117 @@ export default function PostDetail() {
 
   if (isLoading) {
     return (
-      &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
-        &lt;View style={styles.header}&gt;
-          &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
-            &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
-          &lt;/TouchableOpacity&gt;
-          &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
-          &lt;View style={{ width: 40 }} /&gt;
-        &lt;/View&gt;
-        &lt;View style={styles.loadingContainer}&gt;
-          &lt;ActivityIndicator size="large" color="#4ecdc4" /&gt;
-          &lt;Text style={styles.loadingText}&gt;Загрузка...&lt;/Text&gt;
-        &lt;/View&gt;
-      &lt;/View&gt;
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Пост</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4ecdc4" />
+          <Text style={styles.loadingText}>Загрузка...</Text>
+        </View>
+      </View>
     );
   }
 
   if (!post) {
     return (
-      &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
-        &lt;View style={styles.header}&gt;
-          &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
-            &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
-          &lt;/TouchableOpacity&gt;
-          &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
-        &lt;/View&gt;
-        &lt;View style={styles.errorContainer}&gt;
-          &lt;Text style={styles.errorText}&gt;Пост не найден&lt;/Text&gt;
-        &lt;/View&gt;
-      &lt;/View&gt;
+      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => router.back()}>
+            <Ionicons name="arrow-back" size={24} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Пост</Text>
+        </View>
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Пост не найден</Text>
+        </View>
+      </View>
     );
   }
 
   return (
-    &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
-      &lt;StatusBar backgroundColor="#0a0a0a" barStyle="light-content" /&gt;
-      &lt;View style={styles.header}&gt;
-        &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
-          &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
-        &lt;/TouchableOpacity&gt;
-        &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
-        &lt;TouchableOpacity
+    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
+      <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Пост</Text>
+        <TouchableOpacity
           style={[styles.menuButton, { zIndex: 1000 }]}
           onPress={handlePostMenu}
           activeOpacity={0.7}
           accessibilityLabel="Menu"
-        &gt;
-          &lt;Ionicons name="ellipsis-horizontal" size={24} color="#fff" /&gt;
-        &lt;/TouchableOpacity&gt;
-      &lt;/View&gt;
+        >
+          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
+        </TouchableOpacity>
+      </View>
 
-      &lt;KeyboardAvoidingView
+      <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-      &gt;
-        &lt;ScrollView style={styles.content}&gt;
-          &lt;View style={styles.postCard}&gt;
-            &lt;View style={styles.postHeader}&gt;
-              &lt;Text style={styles.author}&gt;{post.author_display_name}&lt;/Text&gt;
-              &lt;Text style={styles.timestamp}&gt;
+      >
+        <ScrollView style={styles.content}>
+          <View style={styles.postCard}>
+            <View style={styles.postHeader}>
+              <Text style={styles.author}>{post.author_display_name}</Text>
+              <Text style={styles.timestamp}>
                 {new Date(post.created_at).toLocaleDateString('ru-RU')}
-              &lt;/Text&gt;
-            &lt;/View&gt;
+              </Text>
+            </View>
 
-            {post.title &amp;&amp; (
-              &lt;Text style={styles.title}&gt;{post.title}&lt;/Text&gt;
+            {post.title && (
+              <Text style={styles.title}>{post.title}</Text>
             )}
 
-            &lt;Text style={styles.postContent}&gt;{post.content}&lt;/Text&gt;
+            <Text style={styles.postContent}>{post.content}</Text>
 
-            {post.images &amp;&amp; post.images.length &gt; 0 &amp;&amp; (
-              &lt;Image
+            {post.images && post.images.length > 0 && (
+              <Image
                 source={{ uri: `data:image/jpeg;base64,${post.images[0]}` }}
                 style={styles.postImage}
                 resizeMode="cover"
-              /&gt;
+              />
             )}
 
-            {post.tags.length &gt; 0 &amp;&amp; (
-              &lt;View style={styles.tagsContainer}&gt;
-                {post.tags.map((tag, index) =&gt; (
-                  &lt;Text key={index} style={styles.tag}&gt;
+            {post.tags.length > 0 && (
+              <View style={styles.tagsContainer}>
+                {post.tags.map((tag, index) => (
+                  <Text key={index} style={styles.tag}>
                     #{tag}
-                  &lt;/Text&gt;
+                  </Text>
                 ))}
-              &lt;/View&gt;
+              </View>
             )}
 
-            &lt;View style={styles.postStats}&gt;
-              &lt;Text style={styles.statsText}&gt;
+            <View style={styles.postStats}>
+              <Text style={styles.statsText}>
                 {post.comments_count} комментарие{post.comments_count === 1 ? 'й' : 'в'}
-              &lt;/Text&gt;
-            &lt;/View&gt;
-          &lt;/View&gt;
+              </Text>
+            </View>
+          </View>
 
-          &lt;View style={styles.commentsSection}&gt;
-            &lt;Text style={styles.commentsTitle}&gt;Комментарии&lt;/Text&gt;
+          <View style={styles.commentsSection}>
+            <Text style={styles.commentsTitle}>Комментарии</Text>
             
-            {comments.map((comment) =&gt; (
-              &lt;View key={comment.id} style={styles.commentCard}&gt;
-                &lt;View style={styles.commentHeader}&gt;
-                  &lt;Text style={styles.commentAuthor}&gt;{comment.author_display_name}&lt;/Text&gt;
-                  &lt;Text style={styles.commentTimestamp}&gt;
+            {comments.map((comment) => (
+              <View key={comment.id} style={styles.commentCard}>
+                <View style={styles.commentHeader}>
+                  <Text style={styles.commentAuthor}>{comment.author_display_name}</Text>
+                  <Text style={styles.commentTimestamp}>
                     {new Date(comment.created_at).toLocaleDateString('ru-RU')}
-                  &lt;/Text&gt;
-                &lt;/View&gt;
-                &lt;Text style={styles.commentContent}&gt;{comment.content}&lt;/Text&gt;
-              &lt;/View&gt;
+                  </Text>
+                </View>
+                <Text style={styles.commentContent}>{comment.content}</Text>
+              </View>
             ))}
 
-            &lt;View style={styles.addCommentSection}&gt;
-              &lt;TextInput
+            <View style={styles.addCommentSection}>
+              <TextInput
                 style={styles.commentInput}
                 value={newComment}
                 onChangeText={setNewComment}
@@ -281,68 +281,68 @@ export default function PostDetail() {
                 placeholderTextColor="#666"
                 multiline
                 maxLength={500}
-              /&gt;
-              &lt;TouchableOpacity
-                style={[styles.submitButton, !newComment.trim() &amp;&amp; styles.submitButtonDisabled]}
+              />
+              <TouchableOpacity
+                style={[styles.submitButton, !newComment.trim() && styles.submitButtonDisabled]}
                 onPress={handleAddComment}
                 disabled={!newComment.trim() || isSubmittingComment}
-              &gt;
+              >
                 {isSubmittingComment ? (
-                  &lt;ActivityIndicator size="small" color="#fff" /&gt;
+                  <ActivityIndicator size="small" color="#fff" />
                 ) : (
-                  &lt;Ionicons name="send" size={20} color="#fff" /&gt;
+                  <Ionicons name="send" size={20} color="#fff" />
                 )}
-              &lt;/TouchableOpacity&gt;
-            &lt;/View&gt;
-          &lt;/View&gt;
-        &lt;/ScrollView&gt;
-      &lt;/KeyboardAvoidingView&gt;
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Custom Modal for menu */}
-      &lt;Modal
+      <Modal
         visible={showMenu}
         transparent={true}
         animationType="fade"
         onRequestClose={closeMenu}
-      &gt;
-        &lt;TouchableOpacity 
+      >
+        <TouchableOpacity 
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={closeMenu}
-        &gt;
-          &lt;View style={styles.modalContent}&gt;
-            &lt;TouchableOpacity
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity
               style={styles.modalButton}
-              onPress={() =&gt; {
+              onPress={() => {
                 closeMenu();
                 createChatWithAuthor();
               }}
-            &gt;
-              &lt;Ionicons name="chatbubble-outline" size={20} color="#4ecdc4" /&gt;
-              &lt;Text style={styles.modalButtonText}&gt;Написать автору&lt;/Text&gt;
-            &lt;/TouchableOpacity&gt;
+            >
+              <Ionicons name="chatbubble-outline" size={20} color="#4ecdc4" />
+              <Text style={styles.modalButtonText}>Написать автору</Text>
+            </TouchableOpacity>
             
-            &lt;TouchableOpacity
+            <TouchableOpacity
               style={styles.modalButton}
-              onPress={() =&gt; {
+              onPress={() => {
                 closeMenu();
                 handleReport('post', post?.id || '');
               }}
-            &gt;
-              &lt;Ionicons name="flag-outline" size={20} color="#ff6b6b" /&gt;
-              &lt;Text style={[styles.modalButtonText, { color: '#ff6b6b' }]}&gt;Пожаловаться&lt;/Text&gt;
-            &lt;/TouchableOpacity&gt;
+            >
+              <Ionicons name="flag-outline" size={20} color="#ff6b6b" />
+              <Text style={[styles.modalButtonText, { color: '#ff6b6b' }]}>Пожаловаться</Text>
+            </TouchableOpacity>
             
-            &lt;TouchableOpacity
+            <TouchableOpacity
               style={[styles.modalButton, styles.cancelButton]}
               onPress={closeMenu}
-            &gt;
-              &lt;Text style={[styles.modalButtonText, { color: '#666' }]}&gt;Отмена&lt;/Text&gt;
-            &lt;/TouchableOpacity&gt;
-          &lt;/View&gt;
-        &lt;/TouchableOpacity&gt;
-      &lt;/Modal&gt;
-    &lt;/View&gt;
+            >
+              <Text style={[styles.modalButtonText, { color: '#666' }]}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
   );
 }
 
