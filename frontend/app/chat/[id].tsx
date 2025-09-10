@@ -156,11 +156,13 @@ export default function ChatScreen() {
   };
 
   const sendMessage = async () => {
+    console.log('Send message clicked!', { newMessage, user: !!user?.token, isSending });
     if (!newMessage.trim() || !user?.token || isSending) return;
 
     setIsSending(true);
     
     try {
+      console.log('Sending message to:', `${API_BASE_URL}/api/chats/${chatId}/messages`);
       const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
         method: 'POST',
         headers: {
@@ -172,9 +174,15 @@ export default function ChatScreen() {
         }),
       });
 
+      console.log('Response status:', response.status);
       if (response.ok) {
+        const messageData = await response.json();
+        console.log('Message sent successfully:', messageData);
         setNewMessage('');
         fetchMessages();
+      } else {
+        const errorText = await response.text();
+        console.error('Failed to send message:', response.status, errorText);
       }
     } catch (error) {
       console.error('Error sending message:', error);
