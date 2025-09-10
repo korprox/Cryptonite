@@ -412,15 +412,18 @@ test_plan:
 frontend:
   - task: "Единый API клиент + относительные пути (/api/*)"
     implemented: true
-    working: "NA"
+    working: false
     file: "/app/frontend/utils/api.ts"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Создан единый api-клиент (utils/api.ts) с относительными путями '/api'. Устранена проблема плавающего базового URL на фронтенде."
+      - working: false
+        agent: "testing"
+        comment: "❌ CRITICAL ISSUE: API routing not working. Frontend calls to '/api/*' return 404 errors. The unified API client exists and uses relative paths correctly, but there's no proxy/routing from frontend port 3000 to backend port 8001. Backend is accessible directly at https://secret-share-6.preview.emergentagent.com/api/* but frontend can't reach it through relative paths. This blocks all authentication and data functionality."
 
   - task: "Create Post: закрытие экрана и редирект"
     implemented: true
