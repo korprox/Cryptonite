@@ -17,6 +17,7 @@ export default function RootLayout() {
         <Stack.Screen name="main" />
         <Stack.Screen name="post/[id]" />
         <Stack.Screen name="create-post" />
+        <Stack.Screen name="chat/[id]" />
       </Stack>
     </AuthProvider>
   );
