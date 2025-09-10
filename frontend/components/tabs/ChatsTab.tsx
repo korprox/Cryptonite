@@ -165,8 +165,44 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
-  content: {
+  listContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  chatCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a1a1a',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#333',
+  },
+  chatAvatar: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#333',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  chatInfo: {
     flex: 1,
+  },
+  chatTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 4,
+  },
+  chatSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  chatMeta: {
+    alignItems: 'center',
   },
   emptyState: {
     flex: 1,
@@ -188,5 +224,16 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0c0c0c',
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 16,
   },
 });
