@@ -22,7 +22,7 @@ interface Chat {
   is_active: boolean;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { api } from '../../utils/api';
 
 export default function ChatsTab() {
   const [chats, setChats] = useState<Chat[]>([]);
