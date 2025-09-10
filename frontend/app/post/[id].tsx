@@ -157,8 +157,9 @@ export default function PostDetail() {
     }
 
     try {
+      setShowMenu(false);
       const response = await fetch(`${API_BASE_URL}/api/chats`, {
-        method: 'POST',
+        method: 'POST',  
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${user.token}`,
@@ -172,6 +173,7 @@ export default function PostDetail() {
         const chatData = await response.json();
         router.push(`/chat/${chatData.id}`);
       } else {
+        console.error('Failed to create chat, status:', response.status);
         Alert.alert('Ошибка', 'Не удалось создать чат');
       }
     } catch (error) {
