@@ -48,6 +48,7 @@ export default function PostDetail() {
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
