@@ -233,7 +233,7 @@ export default function CreatePost() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
