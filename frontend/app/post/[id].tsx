@@ -141,6 +141,7 @@ export default function PostDetail() {
   };
 
   const handlePostMenu = () => {
+    console.log('Menu button clicked!');
     setShowMenu(true);
   };
 
