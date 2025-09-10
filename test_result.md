@@ -353,15 +353,9 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "App Loading and Initialization"
-    - "Bottom Tab Navigation"
-    - "Posts Feed Display"
+  current_focus: []
+  stuck_tasks:
     - "Post Creation Flow"
-    - "Post Detail View"
-    - "Profile Tab and User Info"
-    - "Mobile UI/UX and Dark Theme"
-  stuck_tasks: []
   test_all: false
   test_priority: "high_first"
 
