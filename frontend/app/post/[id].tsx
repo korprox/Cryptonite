@@ -11,10 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
+  SafeAreaView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
