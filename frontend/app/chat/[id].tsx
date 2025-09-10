@@ -407,6 +407,13 @@ export default function ChatScreen() {
             placeholderTextColor="#666"
             multiline
             maxLength={1000}
+            onSubmitEditing={() => {
+              console.log('Enter key pressed!');
+              if (newMessage.trim()) {
+                sendMessage();
+              }
+            }}
+            blurOnSubmit={false}
           />
           <TouchableOpacity
             style={[
