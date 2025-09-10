@@ -221,7 +221,8 @@ export default function PostDetail() {
           <Text style={styles.headerTitle}>Пост</Text>
           <TouchableOpacity
             style={styles.menuButton}
-            onPress={() => handleReport('post', post.id)}
+            onPress={handlePostMenu}
+            activeOpacity={0.7}
           >
             <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
           </TouchableOpacity>
