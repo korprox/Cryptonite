@@ -40,12 +40,7 @@ export default function ChatsTab() {
     if (!user?.token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/chats`, {
-        headers: {
-          'Authorization': `Bearer ${user.token}`,
-        },
-      });
-
+      const response = await api.get('/chats', user.token);
       if (response.ok) {
         const data = await response.json();
         setChats(data);
