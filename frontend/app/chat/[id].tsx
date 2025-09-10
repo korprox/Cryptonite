@@ -64,7 +64,8 @@ export default function ChatScreen() {
   
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
-  const peerConnection = useRef<RTCPeerConnection | null>(null);
+  // const peerConnection = useRef<RTCPeerConnection | null>(null);
+  const peerConnection = useRef<any>(null);
   const callTimer = useRef<NodeJS.Timeout | null>(null);
   const callStartTime = useRef<Date | null>(null);
 
