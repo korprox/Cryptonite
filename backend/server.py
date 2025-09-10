@@ -134,17 +134,14 @@ class CallResponse(BaseModel):
 class WebRTCOffer(BaseModel):
     chat_id: str
     offer: dict
-    caller_id: str
 
 class WebRTCAnswer(BaseModel):
     chat_id: str
     answer: dict
-    receiver_id: str
 
 class ICECandidate(BaseModel):
     chat_id: str
     candidate: dict
-    sender_id: str
 
 # Helper functions
 def generate_anonymous_id():
