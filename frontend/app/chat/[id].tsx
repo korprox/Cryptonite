@@ -207,7 +207,7 @@ export default function ChatScreen() {
       }
 
       // Create call request
-      const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/call-request`, {
+      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/call-request`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
