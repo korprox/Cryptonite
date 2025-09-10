@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../contexts/AuthContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
@@ -26,6 +27,7 @@ export default function CreatePost() {
   const [images, setImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const handlePickImage = async () => {
     try {
