@@ -322,6 +322,267 @@ async def create_report(report_data: ReportCreate, current_user: AnonymousUser =
     
     return {"message": "Report submitted successfully"}
 
+# Chat endpoints
+@api_router.post("/chats")
+async def create_chat(receiver_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Create or get existing chat with another user"""
+    # Check if chat already exists
+    existing_chat = await db.chats.find_one({
+        "participants": {"$all": [current_user.id, receiver_id]},
+        "is_active": True
+    })
+    
+    if existing_chat:
+        return Chat(**existing_chat)
+    
+    # Create new chat
+    chat_id = str(uuid.uuid4())
+    chat = Chat(
+        id=chat_id,
+        participants=[current_user.id, receiver_id],
+        created_at=datetime.utcnow(),
+        last_message_at=datetime.utcnow(),
+        is_active=True
+    )
+    
+    await db.chats.insert_one(chat.dict())
+    return chat
+
+@api_router.get("/chats", response_model=List[Chat])
+async def get_user_chats(current_user: AnonymousUser = Depends(get_current_user)):
+    """Get all chats for current user"""
+    chats = await db.chats.find({
+        "participants": current_user.id,
+        "is_active": True
+    }).sort("last_message_at", -1).to_list(100)
+    
+    return [Chat(**chat) for chat in chats]
+
+@api_router.post("/chats/{chat_id}/messages", response_model=Message)
+async def send_message(chat_id: str, message_data: MessageCreate, current_user: AnonymousUser = Depends(get_current_user)):
+    """Send message in chat"""
+    # Verify user is participant
+    chat = await db.chats.find_one({"id": chat_id, "participants": current_user.id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    message_id = str(uuid.uuid4())
+    message = Message(
+        id=message_id,
+        chat_id=chat_id,
+        sender_id=current_user.id,
+        sender_display_name=current_user.display_name,
+        content=message_data.content,
+        created_at=datetime.utcnow(),
+        is_read=False
+    )
+    
+    await db.messages.insert_one(message.dict())
+    
+    # Update chat last message time
+    await db.chats.update_one(
+        {"id": chat_id},
+        {"$set": {"last_message_at": datetime.utcnow()}}
+    )
+    
+    return message
+
+@api_router.get("/chats/{chat_id}/messages", response_model=List[Message])
+async def get_chat_messages(chat_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Get messages in chat"""
+    # Verify user is participant
+    chat = await db.chats.find_one({"id": chat_id, "participants": current_user.id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    messages = await db.messages.find(
+        {"chat_id": chat_id}
+    ).sort("created_at", 1).to_list(1000)
+    
+    return [Message(**message) for message in messages]
+
+# Call endpoints
+@api_router.post("/chats/{chat_id}/call-request", response_model=CallRequest)
+async def create_call_request(chat_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Request audio call with chat participant"""
+    # Verify chat exists and user is participant
+    chat = await db.chats.find_one({"id": chat_id, "participants": current_user.id})
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    
+    # Get receiver ID (other participant)
+    receiver_id = None
+    for participant_id in chat["participants"]:
+        if participant_id != current_user.id:
+            receiver_id = participant_id
+            break
+    
+    if not receiver_id:
+        raise HTTPException(status_code=400, detail="No other participant found")
+    
+    # Check for existing pending call
+    existing_call = await db.call_requests.find_one({
+        "chat_id": chat_id,
+        "status": "pending"
+    })
+    
+    if existing_call:
+        raise HTTPException(status_code=400, detail="Call already in progress")
+    
+    call_id = str(uuid.uuid4())
+    call_request = CallRequest(
+        id=call_id,
+        chat_id=chat_id,
+        caller_id=current_user.id,
+        caller_display_name=current_user.display_name,
+        receiver_id=receiver_id,
+        status="pending",
+        created_at=datetime.utcnow(),
+        duration_minutes=0
+    )
+    
+    await db.call_requests.insert_one(call_request.dict())
+    return call_request
+
+@api_router.post("/call-requests/{call_id}/respond")
+async def respond_to_call(call_id: str, response: CallResponse, current_user: AnonymousUser = Depends(get_current_user)):
+    """Accept or reject call request"""
+    call_request = await db.call_requests.find_one({
+        "id": call_id,
+        "receiver_id": current_user.id,
+        "status": "pending"
+    })
+    
+    if not call_request:
+        raise HTTPException(status_code=404, detail="Call request not found")
+    
+    new_status = "accepted" if response.action == "accept" else "rejected"
+    update_data = {"status": new_status}
+    
+    if response.action == "accept":
+        update_data["started_at"] = datetime.utcnow()
+    
+    await db.call_requests.update_one(
+        {"id": call_id},
+        {"$set": update_data}
+    )
+    
+    return {"message": f"Call {new_status}"}
+
+@api_router.post("/call-requests/{call_id}/end")
+async def end_call(call_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """End active call"""
+    call_request = await db.call_requests.find_one({
+        "id": call_id,
+        "$or": [{"caller_id": current_user.id}, {"receiver_id": current_user.id}],
+        "status": "accepted"
+    })
+    
+    if not call_request:
+        raise HTTPException(status_code=404, detail="Active call not found")
+    
+    ended_at = datetime.utcnow()
+    started_at = call_request.get("started_at")
+    duration = 0
+    
+    if started_at:
+        duration = int((ended_at - started_at).total_seconds() / 60)
+    
+    await db.call_requests.update_one(
+        {"id": call_id},
+        {"$set": {
+            "status": "ended",
+            "ended_at": ended_at,
+            "duration_minutes": duration
+        }}
+    )
+    
+    return {"message": "Call ended", "duration_minutes": duration}
+
+# WebRTC signaling endpoints
+@api_router.post("/webrtc/offer")
+async def send_webrtc_offer(offer_data: WebRTCOffer, current_user: AnonymousUser = Depends(get_current_user)):
+    """Send WebRTC offer for call setup"""
+    # Store offer in temporary collection for receiver to get
+    await db.webrtc_offers.insert_one({
+        "chat_id": offer_data.chat_id,
+        "caller_id": current_user.id,
+        "offer": offer_data.offer,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(minutes=2)
+    })
+    
+    return {"message": "Offer sent"}
+
+@api_router.get("/webrtc/offer/{chat_id}")
+async def get_webrtc_offer(chat_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Get WebRTC offer for incoming call"""
+    offer = await db.webrtc_offers.find_one({
+        "chat_id": chat_id,
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not offer:
+        raise HTTPException(status_code=404, detail="No active offer found")
+    
+    return {
+        "offer": offer["offer"],
+        "caller_id": offer["caller_id"]
+    }
+
+@api_router.post("/webrtc/answer")
+async def send_webrtc_answer(answer_data: WebRTCAnswer, current_user: AnonymousUser = Depends(get_current_user)):
+    """Send WebRTC answer for call setup"""
+    await db.webrtc_answers.insert_one({
+        "chat_id": answer_data.chat_id,
+        "receiver_id": current_user.id,
+        "answer": answer_data.answer,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(minutes=2)
+    })
+    
+    return {"message": "Answer sent"}
+
+@api_router.get("/webrtc/answer/{chat_id}")
+async def get_webrtc_answer(chat_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Get WebRTC answer from receiver"""
+    answer = await db.webrtc_answers.find_one({
+        "chat_id": chat_id,
+        "expires_at": {"$gt": datetime.utcnow()}
+    })
+    
+    if not answer:
+        raise HTTPException(status_code=404, detail="No answer found")
+    
+    return {
+        "answer": answer["answer"],
+        "receiver_id": answer["receiver_id"]
+    }
+
+@api_router.post("/webrtc/ice-candidate")
+async def send_ice_candidate(candidate_data: ICECandidate, current_user: AnonymousUser = Depends(get_current_user)):
+    """Send ICE candidate for WebRTC connection"""
+    await db.ice_candidates.insert_one({
+        "chat_id": candidate_data.chat_id,
+        "sender_id": current_user.id,
+        "candidate": candidate_data.candidate,
+        "created_at": datetime.utcnow(),
+        "expires_at": datetime.utcnow() + timedelta(minutes=5)
+    })
+    
+    return {"message": "ICE candidate sent"}
+
+@api_router.get("/webrtc/ice-candidates/{chat_id}")
+async def get_ice_candidates(chat_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+    """Get ICE candidates for WebRTC connection"""
+    candidates = await db.ice_candidates.find({
+        "chat_id": chat_id,
+        "sender_id": {"$ne": current_user.id},  # Get candidates from other user
+        "expires_at": {"$gt": datetime.utcnow()}
+    }).to_list(100)
+    
+    return [{"candidate": c["candidate"], "sender_id": c["sender_id"]} for c in candidates]
+
 # Health check
 @api_router.get("/health")
 async def health_check():
