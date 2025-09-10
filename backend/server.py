@@ -94,6 +94,58 @@ class ReportCreate(BaseModel):
     target_id: str
     reason: str
 
+class Chat(BaseModel):
+    id: str
+    participants: List[str]  # user IDs
+    created_at: datetime
+    last_message_at: datetime
+    is_active: bool = True
+
+class Message(BaseModel):
+    id: str
+    chat_id: str
+    sender_id: str
+    sender_display_name: str
+    content: str
+    created_at: datetime
+    is_read: bool = False
+
+class MessageCreate(BaseModel):
+    content: str
+
+class CallRequest(BaseModel):
+    id: str
+    chat_id: str
+    caller_id: str
+    caller_display_name: str
+    receiver_id: str
+    status: str  # "pending", "accepted", "rejected", "ended"
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    ended_at: Optional[datetime] = None
+    duration_minutes: int = 0
+
+class CallRequestCreate(BaseModel):
+    receiver_id: str
+
+class CallResponse(BaseModel):
+    action: str  # "accept" or "reject"
+
+class WebRTCOffer(BaseModel):
+    chat_id: str
+    offer: dict
+    caller_id: str
+
+class WebRTCAnswer(BaseModel):
+    chat_id: str
+    answer: dict
+    receiver_id: str
+
+class ICECandidate(BaseModel):
+    chat_id: str
+    candidate: dict
+    sender_id: str
+
 # Helper functions
 def generate_anonymous_id():
     """Generate anonymous ID like 'Автор #1472'"""
