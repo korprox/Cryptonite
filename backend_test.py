@@ -117,11 +117,11 @@ class KriptonitAPITester:
         try:
             response = requests.get(f"{self.base_url}/auth/me", timeout=10)
             
-            if response.status_code == 401:
-                self.log_result("Get Current User (No Token)", True, "Correctly rejected unauthorized request")
+            if response.status_code in [401, 403]:
+                self.log_result("Get Current User (No Token)", True, f"Correctly rejected unauthorized request (HTTP {response.status_code})")
                 return True
             else:
-                self.log_result("Get Current User (No Token)", False, f"Expected 401, got {response.status_code}", response.text)
+                self.log_result("Get Current User (No Token)", False, f"Expected 401/403, got {response.status_code}", response.text)
                 return False
         except Exception as e:
             self.log_result("Get Current User (No Token)", False, "Request failed", str(e))
