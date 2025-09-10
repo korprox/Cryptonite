@@ -107,7 +107,7 @@ export default function ChatScreen() {
     peerConnection.current.onicecandidate = async (event) => {
       if (event.candidate && user?.token) {
         try {
-          await fetch(`${API_BASE_URL}/api/webrtc/ice-candidate`, {
+          await fetch(`${API_BASE_URL}/webrtc/ice-candidate`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
