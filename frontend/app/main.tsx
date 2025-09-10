@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, Platform, StatusBar } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PostsTab from '../components/tabs/PostsTab';
@@ -13,17 +13,25 @@ const Tab = createBottomTabNavigator();
 export default function MainTabs() {
   const insets = useSafeAreaInsets();
   
+  // Platform specific top padding
+  const getTopPadding = () => {
+    if (Platform.OS === 'android') {
+      return (StatusBar.currentHeight || 0) + 10;
+    }
+    return insets.top;
+  };
+  
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: getTopPadding() }]}>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
           tabBarStyle: {
             backgroundColor: '#1a1a1a',
             borderTopColor: '#333',
-            height: 60 + insets.bottom,
+            height: 60 + (Platform.OS === 'android' ? 10 : insets.bottom),
             paddingTop: 5,
-            paddingBottom: insets.bottom + 8,
+            paddingBottom: (Platform.OS === 'android' ? 10 : insets.bottom) + 8,
           },
           tabBarActiveTintColor: '#4ecdc4',
           tabBarInactiveTintColor: '#666',
