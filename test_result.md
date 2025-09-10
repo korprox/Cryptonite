@@ -409,6 +409,56 @@ test_plan:
   test_all: false
   test_priority: "high_first"
 
+frontend:
+  - task: "Единый API клиент + относительные пути (/api/*)"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/utils/api.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Создан единый api-клиент (utils/api.ts) с относительными путями '/api'. Устранена проблема плавающего базового URL на фронтенде."
+
+  - task: "Create Post: закрытие экрана и редирект"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/create-post.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "После успешного создания поста выполняется router.replace('/') для возврата в ленту. Добавлены состояния загрузки/блокировка кнопки, отправка изображений как массив images[]."
+
+  - task: "Post Detail: соответствие контракту бэкенда"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/post/[id].tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Обновлены поля под FastAPI+Mongo схему: author_display_name, images[], исправлено тело жалобы (target_type/target_id). Все вызовы переведены на единый api-клиент."
+
+  - task: "Chat Screen: API вызовы и WebRTC-совместимость"
+    implemented: true
+    working: "NA"
+    file: "/app/frontend/app/chat/[id].tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Переведены вызовы на api-клиент, убраны двойные '/api'. WebRTC безопасно инициализируется только при наличии глобальных объектов (без импортов), чтобы веб не падал."
+
+
 agent_communication:
   - agent: "testing"
     message: "Comprehensive backend API testing completed successfully. All 15 test cases passed (100% success rate). Created backend_test.py for automated testing. All endpoints working correctly: health check, anonymous auth, posts CRUD, comments, reports, and MongoDB integration. No critical issues found. Backend is production-ready."
