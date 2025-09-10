@@ -117,8 +117,15 @@ export default function CreatePost() {
     }
   };
 
+  const getTopPadding = () => {
+    if (Platform.OS === 'android') {
+      return (StatusBar.currentHeight || 0) + 10;
+    }
+    return insets.top;
+  };
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: getTopPadding() }]}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardContainer}
