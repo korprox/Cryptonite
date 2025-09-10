@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """
-Backend API Tests for Криптонит Application
-Tests all backend endpoints including authentication, posts, comments, and reports
+Backend API Tests for Криптонит Application - Phase 4: Audio Calls
+Tests all backend endpoints including:
+- Phase 1: Authentication, posts, comments, reports
+- Phase 4: Chats, audio calls, WebRTC signaling
 """
 
 import requests
