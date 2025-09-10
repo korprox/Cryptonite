@@ -335,7 +335,7 @@ export default function PostDetail() {
           </View>
         )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
