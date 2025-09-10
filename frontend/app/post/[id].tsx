@@ -630,6 +630,38 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 16,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    padding: 16,
+    width: '80%',
+    maxWidth: 300,
+  },
+  modalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  modalButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    marginLeft: 12,
+  },
+  cancelButton: {
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    marginTop: 8,
+    justifyContent: 'center',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
