@@ -200,11 +200,11 @@ export default function PostDetail() {
 
   if (!post) {
     return (
-      <SafeAreaView style={styles.container}>
+      <View style={[styles.container, { paddingTop: insets.top }]}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Пост не найден</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
