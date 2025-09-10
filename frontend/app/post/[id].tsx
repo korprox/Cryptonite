@@ -143,6 +143,8 @@ export default function PostDetail() {
       ]
     );
   };
+
+  const handleReport = (targetType: string, targetId: string) => {
     Alert.alert(
       'Пожаловаться на контент',
       'Выберите причину жалобы:',
