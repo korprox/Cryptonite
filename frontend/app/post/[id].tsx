@@ -371,6 +371,51 @@ export default function PostDetail() {
           </View>
         )}
       </KeyboardAvoidingView>
+
+      {/* Custom Modal for menu */}
+      <Modal
+        visible={showMenu}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={closeMenu}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={closeMenu}
+        >
+          <View style={styles.modalContent}>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                closeMenu();
+                createChatWithAuthor();
+              }}
+            >
+              <Ionicons name="chatbubble-outline" size={20} color="#4ecdc4" />
+              <Text style={styles.modalButtonText}>Написать автору</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                closeMenu();
+                handleReport('post', post?.id || '');
+              }}
+            >
+              <Ionicons name="flag-outline" size={20} color="#ff6b6b" />
+              <Text style={[styles.modalButtonText, { color: '#ff6b6b' }]}>Пожаловаться</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity
+              style={[styles.modalButton, styles.cancelButton]}
+              onPress={closeMenu}
+            >
+              <Text style={[styles.modalButtonText, { color: '#666' }]}>Отмена</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
