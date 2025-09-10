@@ -141,18 +141,11 @@ export default function PostDetail() {
   };
 
   const handlePostMenu = () => {
-    Alert.alert(
-      'Действия с постом',
-      'Выберите действие:',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { 
-          text: 'Написать автору', 
-          onPress: () => createChatWithAuthor()
-        },
-        { text: 'Пожаловаться', onPress: () => handleReport('post', post.id) },
-      ]
-    );
+    setShowMenu(true);
+  };
+
+  const closeMenu = () => {
+    setShowMenu(false);
   };
 
   const createChatWithAuthor = async () => {
