@@ -67,7 +67,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`${API_BASE_URL}/api/auth/anonymous`, {
+      const response = await fetch(`${API_BASE_URL}/auth/anonymous`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
