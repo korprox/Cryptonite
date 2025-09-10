@@ -322,13 +322,16 @@ async def create_report(report_data: ReportCreate, current_user: AnonymousUser =
     
     return {"message": "Report submitted successfully"}
 
+class ChatCreate(BaseModel):
+    receiver_id: str
+
 # Chat endpoints
 @api_router.post("/chats")
-async def create_chat(receiver_id: str, current_user: AnonymousUser = Depends(get_current_user)):
+async def create_chat(chat_data: ChatCreate, current_user: AnonymousUser = Depends(get_current_user)):
     """Create or get existing chat with another user"""
     # Check if chat already exists
     existing_chat = await db.chats.find_one({
-        "participants": {"$all": [current_user.id, receiver_id]},
+        "participants": {"$all": [current_user.id, chat_data.receiver_id]},
         "is_active": True
     })
     
@@ -339,7 +342,7 @@ async def create_chat(receiver_id: str, current_user: AnonymousUser = Depends(ge
     chat_id = str(uuid.uuid4())
     chat = Chat(
         id=chat_id,
-        participants=[current_user.id, receiver_id],
+        participants=[current_user.id, chat_data.receiver_id],
         created_at=datetime.utcnow(),
         last_message_at=datetime.utcnow(),
         is_active=True
