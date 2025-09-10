@@ -47,6 +47,7 @@ export default function PostDetail() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (id) {
