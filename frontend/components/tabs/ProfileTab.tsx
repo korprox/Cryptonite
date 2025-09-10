@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingVertical: 16,
-    paddingTop: 20,
+    paddingTop: Platform.OS === 'android' ? 8 : 20,
     borderBottomWidth: 1,
     borderBottomColor: '#333',
     backgroundColor: '#0c0c0c',
