@@ -162,8 +162,8 @@ export default function ChatScreen() {
     setIsSending(true);
     
     try {
-      console.log('Sending message to:', `${API_BASE_URL}/api/chats/${chatId}/messages`);
-      const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
+      console.log('Sending message to:', `${API_BASE_URL}/chats/${chatId}/messages`);
+      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
