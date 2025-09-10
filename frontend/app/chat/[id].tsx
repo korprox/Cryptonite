@@ -16,12 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-import {
-  RTCPeerConnection,
-  RTCIceCandidate,
-  RTCSessionDescription,
-  mediaDevices,
-} from 'react-native-webrtc';
+// WebRTC imports temporarily disabled
+// import {
+//   RTCPeerConnection,
+//   RTCIceCandidate,
+//   RTCSessionDescription,
+//   mediaDevices,
+// } from 'react-native-webrtc';
 
 interface Message {
   id: string;
