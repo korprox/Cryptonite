@@ -16,13 +16,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '../../contexts/AuthContext';
-// WebRTC imports - disabled for web compatibility
-// import {
-//   RTCPeerConnection,
-//   RTCIceCandidate,
-//   RTCSessionDescription,
-//   mediaDevices,
-// } from 'react-native-webrtc';
+// WebRTC imports - conditional for platform compatibility
+let RTCPeerConnection: any = null;
+let RTCIceCandidate: any = null; 
+let RTCSessionDescription: any = null;
+let mediaDevices: any = null;
+
+// Try to import WebRTC only on native platforms
+try {
+  if (typeof window === 'undefined') {
+    // React Native environment
+    const webrtc = require('react-native-webrtc');
+    RTCPeerConnection = webrtc.RTCPeerConnection;
+    RTCIceCandidate = webrtc.RTCIceCandidate;
+    RTCSessionDescription = webrtc.RTCSessionDescription;
+    mediaDevices = webrtc.mediaDevices;
+  } else {
+    // Web environment - use browser native WebRTC
+    RTCPeerConnection = window.RTCPeerConnection;
+    RTCIceCandidate = window.RTCIceCandidate;
+    RTCSessionDescription = window.RTCSessionDescription;
+    mediaDevices = navigator.mediaDevices;
+  }
+} catch (error) {
+  console.log('WebRTC not available:', error);
+}
 
 interface Message {
   id: string;
