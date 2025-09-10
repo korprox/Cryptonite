@@ -322,7 +322,7 @@ export default function PostDetail() {
               </TouchableOpacity>
             </View>
           </View>
-        )}
+        </ScrollView>
       </KeyboardAvoidingView>
 
       {/* Custom Modal for menu */}
