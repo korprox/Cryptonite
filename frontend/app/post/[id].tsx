@@ -13,6 +13,7 @@ import {
   Image,
   SafeAreaView,
   StatusBar,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
