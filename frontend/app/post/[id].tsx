@@ -127,7 +127,22 @@ export default function PostDetail() {
     }
   };
 
-  const handleReport = (targetType: string, targetId: string) => {
+  const handlePostMenu = () => {
+    Alert.alert(
+      'Действия с постом',
+      'Выберите действие:',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        { 
+          text: 'Написать автору', 
+          onPress: () => {
+            Alert.alert('Функция в разработке', 'Личные сообщения будут доступны в следующей версии');
+          }
+        },
+        { text: 'Пожаловаться', onPress: () => handleReport('post', post.id) },
+      ]
+    );
+  };
     Alert.alert(
       'Пожаловаться на контент',
       'Выберите причину жалобы:',
