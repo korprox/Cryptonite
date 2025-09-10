@@ -86,7 +86,13 @@ export default function CreatePost() {
       if (response.ok) {
         const newPost = await response.json();
         Alert.alert('Успех', 'Пост создан!', [
-          { text: 'OK', onPress: () => router.push(`/post/${newPost.id}`) }
+          { 
+            text: 'OK', 
+            onPress: () => {
+              // Переходим на созданный пост
+              router.replace(`/post/${newPost.id}`);
+            }
+          }
         ]);
       } else {
         const errorData = await response.text();
