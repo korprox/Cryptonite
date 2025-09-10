@@ -138,7 +138,7 @@ export default function ChatScreen() {
     if (!user?.token || !chatId) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chats/${chatId}/messages`, {
+      const response = await fetch(`${API_BASE_URL}/chats/${chatId}/messages`, {
         headers: {
           'Authorization': `Bearer ${user.token}`,
         },
