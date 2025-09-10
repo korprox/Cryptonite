@@ -140,9 +140,13 @@ export default function PostsTab() {
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Криптонит</Text>
         <TouchableOpacity
-          style={styles.createButton}
-          onPress={() => router.push('/create-post')}
+          style={[styles.createButton, { zIndex: 1000 }]}
+          onPress={() => {
+            console.log('Create post button clicked!');
+            router.push('/create-post');
+          }}
           activeOpacity={0.7}
+          accessibilityLabel="Create post"
         >
           <Ionicons name="add" size={24} color="#4ecdc4" />
         </TouchableOpacity>
