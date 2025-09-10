@@ -209,7 +209,7 @@ export default function PostDetail() {
 
   if (!post) {
     return (
-      <View style={[styles.container, { paddingTop: insets.top }]}>
+      <View style={[styles.container, { paddingTop: getTopPadding() }]}>
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Пост не найден</Text>
         </View>
