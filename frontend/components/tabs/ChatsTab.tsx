@@ -40,7 +40,7 @@ export default function ChatsTab() {
     if (!user?.token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chats`, {
+      const response = await fetch(`${API_BASE_URL}/chats`, {
         headers: {
           'Authorization': `Bearer ${user.token}`,
         },
