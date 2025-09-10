@@ -143,7 +143,12 @@ export default function PostsTab() {
           style={[styles.createButton, { zIndex: 1000 }]}
           onPress={() => {
             console.log('Create post button clicked!');
-            router.push('/create-post');
+            try {
+              router.push('/create-post');
+              console.log('Navigation to create-post initiated');
+            } catch (error) {
+              console.error('Navigation error:', error);
+            }
           }}
           activeOpacity={0.7}
           accessibilityLabel="Create post"
