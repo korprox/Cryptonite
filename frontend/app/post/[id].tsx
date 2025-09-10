@@ -11,7 +11,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  SafeAreaView,
   StatusBar,
   Modal,
 } from 'react-native';
@@ -19,16 +18,15 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../contexts/AuthContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
+import { api } from '../../utils/api';
 
 interface Post {
   id: string;
   author_id: string;
-  author: string;
+  author_display_name: string;
   title?: string;
   content: string;
-  image_base64?: string;
+  images: string[];
   tags: string[];
   created_at: string;
   comments_count: number;
@@ -36,15 +34,15 @@ interface Post {
 
 interface Comment {
   id: string;
-  author: string;
+  author_display_name: string;
   content: string;
   created_at: string;
 }
 
 export default function PostDetail() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const [post, setPost] = useState<Post | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const { id } = useLocalSearchParams&lt;{ id: string }&gt;();
+  const [post, setPost] = useState&lt;Post | null&gt;(null);
+  const [comments, setComments] = useState&lt;Comment[]&gt;([]);
   const [newComment, setNewComment] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
@@ -53,16 +51,16 @@ export default function PostDetail() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  useEffect(() => {
+  useEffect(() =&gt; {
     if (id) {
       fetchPost();
       fetchComments();
     }
   }, [id]);
 
-  const fetchPost = async () => {
+  const fetchPost = async () =&gt; {
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/${id}`);
+      const response = await api.get(`/posts/${id}`);
       if (response.ok) {
         const data = await response.json();
         setPost(data);
@@ -72,9 +70,9 @@ export default function PostDetail() {
     }
   };
 
-  const fetchComments = async () => {
+  const fetchComments = async () =&gt; {
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/${id}/comments`);
+      const response = await api.get(`/posts/${id}/comments`);
       if (response.ok) {
         const data = await response.json();
         setComments(data);
@@ -86,22 +84,13 @@ export default function PostDetail() {
     }
   };
 
-  const handleAddComment = async () => {
+  const handleAddComment = async () =&gt; {
     if (!newComment.trim() || !user?.token) return;
 
     setIsSubmittingComment(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/posts/${id}/comments`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          content: newComment.trim(),
-        }),
-      });
+      const response = await api.post(`/posts/${id}/comments`, { content: newComment.trim() }, user.token);
 
       if (response.ok) {
         setNewComment('');
@@ -114,16 +103,16 @@ export default function PostDetail() {
     }
   };
 
-  const handlePostMenu = () => {
+  const handlePostMenu = () =&gt; {
     console.log('Menu button clicked!');
     setShowMenu(true);
   };
 
-  const closeMenu = () => {
+  const closeMenu = () =&gt; {
     setShowMenu(false);
   };
 
-  const createChatWithAuthor = async () => {
+  const createChatWithAuthor = async () =&gt; {
     if (!user?.token || !post) return;
 
     if (post.author_id === user.id) {
@@ -133,16 +122,7 @@ export default function PostDetail() {
 
     try {
       setShowMenu(false);
-      const response = await fetch(`${API_BASE_URL}/chats`, {
-        method: 'POST',  
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          receiver_id: post.author_id,
-        }),
-      });
+      const response = await api.post('/chats', { receiver_id: post.author_id }, user.token);
 
       if (response.ok) {
         const chatData = await response.json();
@@ -157,22 +137,15 @@ export default function PostDetail() {
     }
   };
 
-  const handleReport = async (type: 'post' | 'comment', itemId: string) => {
+  const handleReport = async (target_type: 'post' | 'comment', itemId: string) =&gt; {
     if (!user?.token) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/reports`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${user.token}`,
-        },
-        body: JSON.stringify({
-          type,
-          target_id: itemId,
-          reason: 'Inappropriate content',
-        }),
-      });
+      const response = await api.post('/reports', {
+        target_type,
+        target_id: itemId,
+        reason: 'Inappropriate content',
+      }, user.token);
 
       if (response.ok) {
         Alert.alert('Спасибо', 'Ваша жалоба принята');
@@ -190,117 +163,117 @@ export default function PostDetail() {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Пост</Text>
-          <View style={{ width: 40 }} />
-        </View>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4ecdc4" />
-          <Text style={styles.loadingText}>Загрузка...</Text>
-        </View>
-      </View>
+      &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
+        &lt;View style={styles.header}&gt;
+          &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
+            &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
+          &lt;/TouchableOpacity&gt;
+          &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
+          &lt;View style={{ width: 40 }} /&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.loadingContainer}&gt;
+          &lt;ActivityIndicator size="large" color="#4ecdc4" /&gt;
+          &lt;Text style={styles.loadingText}&gt;Загрузка...&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
     );
   }
 
   if (!post) {
     return (
-      <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Пост</Text>
-        </View>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Пост не найден</Text>
-        </View>
-      </View>
+      &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
+        &lt;View style={styles.header}&gt;
+          &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
+            &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
+          &lt;/TouchableOpacity&gt;
+          &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
+        &lt;/View&gt;
+        &lt;View style={styles.errorContainer}&gt;
+          &lt;Text style={styles.errorText}&gt;Пост не найден&lt;/Text&gt;
+        &lt;/View&gt;
+      &lt;/View&gt;
     );
   }
 
   return (
-    <View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}>
-      <StatusBar backgroundColor="#0a0a0a" barStyle="light-content" />
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Пост</Text>
-        <TouchableOpacity
+    &lt;View style={[styles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight || 0 : insets.top }]}&gt;
+      &lt;StatusBar backgroundColor="#0a0a0a" barStyle="light-content" /&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;TouchableOpacity onPress={() =&gt; router.back()}&gt;
+          &lt;Ionicons name="arrow-back" size={24} color="#fff" /&gt;
+        &lt;/TouchableOpacity&gt;
+        &lt;Text style={styles.headerTitle}&gt;Пост&lt;/Text&gt;
+        &lt;TouchableOpacity
           style={[styles.menuButton, { zIndex: 1000 }]}
           onPress={handlePostMenu}
           activeOpacity={0.7}
           accessibilityLabel="Menu"
-        >
-          <Ionicons name="ellipsis-horizontal" size={24} color="#fff" />
-        </TouchableOpacity>
-      </View>
+        &gt;
+          &lt;Ionicons name="ellipsis-horizontal" size={24} color="#fff" /&gt;
+        &lt;/TouchableOpacity&gt;
+      &lt;/View&gt;
 
-      <KeyboardAvoidingView
+      &lt;KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
-      >
-        <ScrollView style={styles.content}>
-          <View style={styles.postCard}>
-            <View style={styles.postHeader}>
-              <Text style={styles.author}>{post.author}</Text>
-              <Text style={styles.timestamp}>
+      &gt;
+        &lt;ScrollView style={styles.content}&gt;
+          &lt;View style={styles.postCard}&gt;
+            &lt;View style={styles.postHeader}&gt;
+              &lt;Text style={styles.author}&gt;{post.author_display_name}&lt;/Text&gt;
+              &lt;Text style={styles.timestamp}&gt;
                 {new Date(post.created_at).toLocaleDateString('ru-RU')}
-              </Text>
-            </View>
+              &lt;/Text&gt;
+            &lt;/View&gt;
 
-            {post.title && (
-              <Text style={styles.title}>{post.title}</Text>
+            {post.title &amp;&amp; (
+              &lt;Text style={styles.title}&gt;{post.title}&lt;/Text&gt;
             )}
 
-            <Text style={styles.content}>{post.content}</Text>
+            &lt;Text style={styles.postContent}&gt;{post.content}&lt;/Text&gt;
 
-            {post.image_base64 && (
-              <Image
-                source={{ uri: `data:image/jpeg;base64,${post.image_base64}` }}
+            {post.images &amp;&amp; post.images.length &gt; 0 &amp;&amp; (
+              &lt;Image
+                source={{ uri: `data:image/jpeg;base64,${post.images[0]}` }}
                 style={styles.postImage}
                 resizeMode="cover"
-              />
+              /&gt;
             )}
 
-            {post.tags.length > 0 && (
-              <View style={styles.tagsContainer}>
-                {post.tags.map((tag, index) => (
-                  <Text key={index} style={styles.tag}>
+            {post.tags.length &gt; 0 &amp;&amp; (
+              &lt;View style={styles.tagsContainer}&gt;
+                {post.tags.map((tag, index) =&gt; (
+                  &lt;Text key={index} style={styles.tag}&gt;
                     #{tag}
-                  </Text>
+                  &lt;/Text&gt;
                 ))}
-              </View>
+              &lt;/View&gt;
             )}
 
-            <View style={styles.postStats}>
-              <Text style={styles.statsText}>
+            &lt;View style={styles.postStats}&gt;
+              &lt;Text style={styles.statsText}&gt;
                 {post.comments_count} комментарие{post.comments_count === 1 ? 'й' : 'в'}
-              </Text>
-            </View>
-          </View>
+              &lt;/Text&gt;
+            &lt;/View&gt;
+          &lt;/View&gt;
 
-          <View style={styles.commentsSection}>
-            <Text style={styles.commentsTitle}>Комментарии</Text>
+          &lt;View style={styles.commentsSection}&gt;
+            &lt;Text style={styles.commentsTitle}&gt;Комментарии&lt;/Text&gt;
             
-            {comments.map((comment) => (
-              <View key={comment.id} style={styles.commentCard}>
-                <View style={styles.commentHeader}>
-                  <Text style={styles.commentAuthor}>{comment.author}</Text>
-                  <Text style={styles.commentTimestamp}>
+            {comments.map((comment) =&gt; (
+              &lt;View key={comment.id} style={styles.commentCard}&gt;
+                &lt;View style={styles.commentHeader}&gt;
+                  &lt;Text style={styles.commentAuthor}&gt;{comment.author_display_name}&lt;/Text&gt;
+                  &lt;Text style={styles.commentTimestamp}&gt;
                     {new Date(comment.created_at).toLocaleDateString('ru-RU')}
-                  </Text>
-                </View>
-                <Text style={styles.commentContent}>{comment.content}</Text>
-              </View>
+                  &lt;/Text&gt;
+                &lt;/View&gt;
+                &lt;Text style={styles.commentContent}&gt;{comment.content}&lt;/Text&gt;
+              &lt;/View&gt;
             ))}
 
-            <View style={styles.addCommentSection}>
-              <TextInput
+            &lt;View style={styles.addCommentSection}&gt;
+              &lt;TextInput
                 style={styles.commentInput}
                 value={newComment}
                 onChangeText={setNewComment}
@@ -308,68 +281,68 @@ export default function PostDetail() {
                 placeholderTextColor="#666"
                 multiline
                 maxLength={500}
-              />
-              <TouchableOpacity
-                style={[styles.submitButton, !newComment.trim() && styles.submitButtonDisabled]}
+              /&gt;
+              &lt;TouchableOpacity
+                style={[styles.submitButton, !newComment.trim() &amp;&amp; styles.submitButtonDisabled]}
                 onPress={handleAddComment}
                 disabled={!newComment.trim() || isSubmittingComment}
-              >
+              &gt;
                 {isSubmittingComment ? (
-                  <ActivityIndicator size="small" color="#fff" />
+                  &lt;ActivityIndicator size="small" color="#fff" /&gt;
                 ) : (
-                  <Ionicons name="send" size={20} color="#fff" />
+                  &lt;Ionicons name="send" size={20} color="#fff" /&gt;
                 )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+              &lt;/TouchableOpacity&gt;
+            &lt;/View&gt;
+          &lt;/View&gt;
+        &lt;/ScrollView&gt;
+      &lt;/KeyboardAvoidingView&gt;
 
       {/* Custom Modal for menu */}
-      <Modal
+      &lt;Modal
         visible={showMenu}
         transparent={true}
         animationType="fade"
         onRequestClose={closeMenu}
-      >
-        <TouchableOpacity 
+      &gt;
+        &lt;TouchableOpacity 
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={closeMenu}
-        >
-          <View style={styles.modalContent}>
-            <TouchableOpacity
+        &gt;
+          &lt;View style={styles.modalContent}&gt;
+            &lt;TouchableOpacity
               style={styles.modalButton}
-              onPress={() => {
+              onPress={() =&gt; {
                 closeMenu();
                 createChatWithAuthor();
               }}
-            >
-              <Ionicons name="chatbubble-outline" size={20} color="#4ecdc4" />
-              <Text style={styles.modalButtonText}>Написать автору</Text>
-            </TouchableOpacity>
+            &gt;
+              &lt;Ionicons name="chatbubble-outline" size={20} color="#4ecdc4" /&gt;
+              &lt;Text style={styles.modalButtonText}&gt;Написать автору&lt;/Text&gt;
+            &lt;/TouchableOpacity&gt;
             
-            <TouchableOpacity
+            &lt;TouchableOpacity
               style={styles.modalButton}
-              onPress={() => {
+              onPress={() =&gt; {
                 closeMenu();
                 handleReport('post', post?.id || '');
               }}
-            >
-              <Ionicons name="flag-outline" size={20} color="#ff6b6b" />
-              <Text style={[styles.modalButtonText, { color: '#ff6b6b' }]}>Пожаловаться</Text>
-            </TouchableOpacity>
+            &gt;
+              &lt;Ionicons name="flag-outline" size={20} color="#ff6b6b" /&gt;
+              &lt;Text style={[styles.modalButtonText, { color: '#ff6b6b' }]}&gt;Пожаловаться&lt;/Text&gt;
+            &lt;/TouchableOpacity&gt;
             
-            <TouchableOpacity
+            &lt;TouchableOpacity
               style={[styles.modalButton, styles.cancelButton]}
               onPress={closeMenu}
-            >
-              <Text style={[styles.modalButtonText, { color: '#666' }]}>Отмена</Text>
-            </TouchableOpacity>
-          </View>
-        </TouchableOpacity>
-      </Modal>
-    </View>
+            &gt;
+              &lt;Text style={[styles.modalButtonText, { color: '#666' }]}&gt;Отмена&lt;/Text&gt;
+            &lt;/TouchableOpacity&gt;
+          &lt;/View&gt;
+        &lt;/TouchableOpacity&gt;
+      &lt;/Modal&gt;
+    &lt;/View&gt;
   );
 }
 
@@ -434,7 +407,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 8,
   },
-  content: {
+  postContent: {
     fontSize: 16,
     color: '#e0e0e0',
     lineHeight: 24,

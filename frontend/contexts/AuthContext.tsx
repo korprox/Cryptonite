@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
+import { api } from '../utils/api';
 
 interface User {
   id: string;
@@ -12,14 +13,14 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  login: () => Promise<void>;
-  logout: () => Promise<void>;
+  login: () => Promise&lt;void&gt;;
+  logout: () => Promise&lt;void&gt;;
   isAuthenticated: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext&lt;AuthContextType | undefined&gt;(undefined);
 
-export const useAuth = () => {
+export const useAuth = () =&gt; {
   const context = useContext(AuthContext);
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
@@ -31,24 +32,22 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
 export default function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState&lt;User | null&gt;(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const isAuthenticated = !!user;
 
-  useEffect(() => {
+  useEffect(() =&gt; {
     checkAuthStatus();
   }, []);
 
-  const checkAuthStatus = async () => {
+  const checkAuthStatus = async () =&gt; {
     try {
       const token = await AsyncStorage.getItem('auth_token');
       const userData = await AsyncStorage.getItem('user_data');
       
-      if (token && userData) {
+      if (token &amp;&amp; userData) {
         const parsedUser = JSON.parse(userData);
         setUser({ ...parsedUser, token });
       } else {
@@ -63,16 +62,11 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const login = async () => {
+  const login = async () =&gt; {
     try {
       setIsLoading(true);
       
-      const response = await fetch(`${API_BASE_URL}/auth/anonymous`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await api.post('/auth/anonymous', {});
 
       if (!response.ok) {
         throw new Error('Failed to create anonymous user');
@@ -96,7 +90,7 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const logout = async () => {
+  const logout = async () =&gt; {
     try {
       await AsyncStorage.removeItem('auth_token');
       await AsyncStorage.removeItem('user_data');
@@ -110,8 +104,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated }}>
+    &lt;AuthContext.Provider value={{ user, isLoading, login, logout, isAuthenticated }}&gt;
       {children}
-    </AuthContext.Provider>
+    &lt;/AuthContext.Provider&gt;
   );
 }

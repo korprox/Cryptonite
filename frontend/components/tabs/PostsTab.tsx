@@ -9,11 +9,11 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
-  StatusBar,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuth } from '../../contexts/AuthContext';
+import { api } from '../../utils/api';
 
 interface Post {
   id: string;
@@ -26,21 +26,19 @@ interface Post {
   comments_count: number;
 }
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
 export default function PostsTab() {
-  const [posts, setPosts] = useState<Post[]>([]);
+  const [posts, setPosts] = useState&lt;Post[]&gt;([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const { isAuthenticated } = useAuth();
 
-  useEffect(() => {
+  useEffect(() =&gt; {
     fetchPosts();
   }, []);
 
-  const fetchPosts = async () => {
+  const fetchPosts = async () =&gt; {
     try {
-      const response = await fetch(`${API_BASE_URL}/posts`);
+      const response = await api.get('/posts');
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
@@ -53,13 +51,13 @@ export default function PostsTab() {
     }
   };
 
-  const onRefresh = async () => {
+  const onRefresh = async () =&gt; {
     setRefreshing(true);
     await fetchPosts();
     setRefreshing(false);
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string) =&gt; {
     const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
@@ -67,81 +65,81 @@ export default function PostsTab() {
     const diffHours = Math.floor(diffMinutes / 60);
     const diffDays = Math.floor(diffHours / 24);
 
-    if (diffMinutes < 1) return 'Только что';
-    if (diffMinutes < 60) return `${diffMinutes} мин назад`;
-    if (diffHours < 24) return `${diffHours} ч назад`;
-    if (diffDays < 7) return `${diffDays} дн назад`;
+    if (diffMinutes &lt; 1) return 'Только что';
+    if (diffMinutes &lt; 60) return `${diffMinutes} мин назад`;
+    if (diffHours &lt; 24) return `${diffHours} ч назад`;
+    if (diffDays &lt; 7) return `${diffDays} дн назад`;
     
     return date.toLocaleDateString('ru-RU');
   };
 
-  const renderPost = ({ item }: { item: Post }) => (
-    <TouchableOpacity
+  const renderPost = ({ item }: { item: Post }) =&gt; (
+    &lt;TouchableOpacity
       style={styles.postCard}
-      onPress={() => router.push(`/post/${item.id}`)}
+      onPress={() =&gt; router.push(`/post/${item.id}`)}
       activeOpacity={0.7}
-    >
-      <View style={styles.postHeader}>
-        <Text style={styles.authorName}>{item.author_display_name}</Text>
-        <Text style={styles.postDate}>{formatDate(item.created_at)}</Text>
-      </View>
+    &gt;
+      &lt;View style={styles.postHeader}&gt;
+        &lt;Text style={styles.authorName}&gt;{item.author_display_name}&lt;/Text&gt;
+        &lt;Text style={styles.postDate}&gt;{formatDate(item.created_at)}&lt;/Text&gt;
+      &lt;/View&gt;
       
-      <Text style={styles.postTitle}>{item.title}</Text>
-      <Text style={styles.postContent} numberOfLines={3}>
+      &lt;Text style={styles.postTitle}&gt;{item.title}&lt;/Text&gt;
+      &lt;Text style={styles.postContent} numberOfLines={3}&gt;
         {item.content}
-      </Text>
+      &lt;/Text&gt;
       
-      {item.tags.length > 0 && (
-        <View style={styles.tagsContainer}>
-          {item.tags.slice(0, 3).map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>#{tag}</Text>
-            </View>
+      {item.tags.length &gt; 0 &amp;&amp; (
+        &lt;View style={styles.tagsContainer}&gt;
+          {item.tags.slice(0, 3).map((tag, index) =&gt; (
+            &lt;View key={index} style={styles.tag}&gt;
+              &lt;Text style={styles.tagText}&gt;#{tag}&lt;/Text&gt;
+            &lt;/View&gt;
           ))}
-        </View>
+        &lt;/View&gt;
       )}
       
-      <View style={styles.postFooter}>
-        <View style={styles.statsContainer}>
-          <Ionicons name="chatbubble-outline" size={16} color="#666" />
-          <Text style={styles.statsText}>{item.comments_count}</Text>
-        </View>
-        {item.images.length > 0 && (
-          <View style={styles.statsContainer}>
-            <Ionicons name="image-outline" size={16} color="#666" />
-            <Text style={styles.statsText}>{item.images.length}</Text>
-          </View>
+      &lt;View style={styles.postFooter}&gt;
+        &lt;View style={styles.statsContainer}&gt;
+          &lt;Ionicons name="chatbubble-outline" size={16} color="#666" /&gt;
+          &lt;Text style={styles.statsText}&gt;{item.comments_count}&lt;/Text&gt;
+        &lt;/View&gt;
+        {item.images.length &gt; 0 &amp;&amp; (
+          &lt;View style={styles.statsContainer}&gt;
+            &lt;Ionicons name="image-outline" size={16} color="#666" /&gt;
+            &lt;Text style={styles.statsText}&gt;{item.images.length}&lt;/Text&gt;
+          &lt;/View&gt;
         )}
-      </View>
-    </TouchableOpacity>
+      &lt;/View&gt;
+    &lt;/TouchableOpacity&gt;
   );
 
-  const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="newspaper-outline" size={64} color="#333" />
-      <Text style={styles.emptyTitle}>Пока нет постов</Text>
-      <Text style={styles.emptySubtitle}>
+  const renderEmptyState = () =&gt; (
+    &lt;View style={styles.emptyState}&gt;
+      &lt;Ionicons name="newspaper-outline" size={64} color="#333" /&gt;
+      &lt;Text style={styles.emptyTitle}&gt;Пока нет постов&lt;/Text&gt;
+      &lt;Text style={styles.emptySubtitle}&gt;
         Станьте первым, кто поделится своей историей
-      </Text>
-    </View>
+      &lt;/Text&gt;
+    &lt;/View&gt;
   );
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4ecdc4" />
-        <Text style={styles.loadingText}>Загружаем посты...</Text>
-      </View>
+      &lt;View style={styles.loadingContainer}&gt;
+        &lt;ActivityIndicator size="large" color="#4ecdc4" /&gt;
+        &lt;Text style={styles.loadingText}&gt;Загружаем посты...&lt;/Text&gt;
+      &lt;/View&gt;
     );
   }
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Криптонит</Text>
-        <TouchableOpacity
+    &lt;View style={styles.container}&gt;
+      &lt;View style={styles.header}&gt;
+        &lt;Text style={styles.headerTitle}&gt;Криптонит&lt;/Text&gt;
+        &lt;TouchableOpacity
           style={[styles.createButton, { zIndex: 1000 }]}
-          onPress={() => {
+          onPress={() =&gt; {
             console.log('Create post button clicked!');
             try {
               router.push('/create-post');
@@ -152,28 +150,28 @@ export default function PostsTab() {
           }}
           activeOpacity={0.7}
           accessibilityLabel="Create post"
-        >
-          <Ionicons name="add" size={24} color="#4ecdc4" />
-        </TouchableOpacity>
-      </View>
+        &gt;
+          &lt;Ionicons name="add" size={24} color="#4ecdc4" /&gt;
+        &lt;/TouchableOpacity&gt;
+      &lt;/View&gt;
 
-      <FlatList
+      &lt;FlatList
         data={posts}
         renderItem={renderPost}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) =&gt; item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={
-          <RefreshControl
+          &lt;RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor="#4ecdc4"
             colors={['#4ecdc4']}
-          />
+          /&gt;
         }
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
-      />
-    </View>
+      /&gt;
+    &lt;/View&gt;
   );
 }
 
