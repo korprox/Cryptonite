@@ -409,10 +409,18 @@ export default function ChatScreen() {
             maxLength={1000}
           />
           <TouchableOpacity
-            style={[styles.sendButton, (!newMessage.trim() || isSending) && styles.sendButtonDisabled]}
-            onPress={sendMessage}
+            style={[
+              styles.sendButton, 
+              (!newMessage.trim() || isSending) && styles.sendButtonDisabled,
+              { zIndex: 1000 }
+            ]}
+            onPress={() => {
+              console.log('Send button pressed!', { newMessage, disabled: !newMessage.trim() || isSending });
+              sendMessage();
+            }}
             disabled={!newMessage.trim() || isSending}
             activeOpacity={0.7}
+            accessibilityLabel="Send message"
           >
             {isSending ? (
               <ActivityIndicator size="small" color="#4ecdc4" />
