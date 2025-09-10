@@ -1,4 +1,5 @@
-from fastapi import FastAPI, APIRouter
+from fastapi import FastAPI, APIRouter, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -6,10 +7,12 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field
-from typing import List
+from typing import List, Optional
 import uuid
-from datetime import datetime
-
+from datetime import datetime, timedelta
+import jwt
+import hashlib
+import secrets
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -25,32 +28,252 @@ app = FastAPI()
 # Create a router with the /api prefix
 api_router = APIRouter(prefix="/api")
 
+# Security
+security = HTTPBearer()
+JWT_SECRET = os.environ.get('JWT_SECRET', 'kriptonit_secret_key_2025')
 
-# Define Models
-class StatusCheck(BaseModel):
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    client_name: str
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+# Models
+class AnonymousUser(BaseModel):
+    id: str
+    anonymous_id: str
+    display_name: str
+    created_at: datetime
+    last_active: datetime
+    is_blocked: bool = False
 
-class StatusCheckCreate(BaseModel):
-    client_name: str
+class AnonymousUserCreate(BaseModel):
+    pass  # No input needed - completely anonymous
 
-# Add your routes to the router instead of directly to app
-@api_router.get("/")
-async def root():
-    return {"message": "Hello World"}
+class AnonymousUserResponse(BaseModel):
+    id: str
+    anonymous_id: str
+    display_name: str
+    token: str
 
-@api_router.post("/status", response_model=StatusCheck)
-async def create_status_check(input: StatusCheckCreate):
-    status_dict = input.dict()
-    status_obj = StatusCheck(**status_dict)
-    _ = await db.status_checks.insert_one(status_obj.dict())
-    return status_obj
+class Post(BaseModel):
+    id: str
+    author_id: str
+    author_display_name: str
+    title: str
+    content: str
+    images: List[str] = []  # base64 encoded images
+    tags: List[str] = []
+    created_at: datetime
+    updated_at: datetime
+    is_blocked: bool = False
+    comments_count: int = 0
 
-@api_router.get("/status", response_model=List[StatusCheck])
-async def get_status_checks():
-    status_checks = await db.status_checks.find().to_list(1000)
-    return [StatusCheck(**status_check) for status_check in status_checks]
+class PostCreate(BaseModel):
+    title: str
+    content: str
+    images: List[str] = []
+    tags: List[str] = []
+
+class Comment(BaseModel):
+    id: str
+    post_id: str
+    author_id: str
+    author_display_name: str
+    content: str
+    created_at: datetime
+    is_blocked: bool = False
+
+class CommentCreate(BaseModel):
+    content: str
+
+class Report(BaseModel):
+    id: str
+    reporter_id: str
+    target_type: str  # "post" or "comment"
+    target_id: str
+    reason: str
+    created_at: datetime
+
+class ReportCreate(BaseModel):
+    target_type: str
+    target_id: str
+    reason: str
+
+# Helper functions
+def generate_anonymous_id():
+    """Generate anonymous ID like 'Автор #1472'"""
+    number = secrets.randbelow(9999) + 1
+    return f"Автор #{number}"
+
+def generate_jwt_token(user_id: str):
+    """Generate JWT token for user"""
+    payload = {
+        "user_id": user_id,
+        "exp": datetime.utcnow() + timedelta(days=30)
+    }
+    return jwt.encode(payload, JWT_SECRET, algorithm="HS256")
+
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    """Get current user from JWT token"""
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+        user_id = payload.get("user_id")
+        
+        user = await db.users.find_one({"id": user_id})
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+        
+        if user.get("is_blocked", False):
+            raise HTTPException(status_code=403, detail="User is blocked")
+            
+        # Update last active
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"last_active": datetime.utcnow()}}
+        )
+        
+        return AnonymousUser(**user)
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+# Routes
+
+@api_router.post("/auth/anonymous", response_model=AnonymousUserResponse)
+async def create_anonymous_user():
+    """Create anonymous user - no registration needed"""
+    user_id = str(uuid.uuid4())
+    anonymous_id = generate_anonymous_id()
+    
+    # Check if anonymous_id already exists, regenerate if needed
+    while await db.users.find_one({"anonymous_id": anonymous_id}):
+        anonymous_id = generate_anonymous_id()
+    
+    display_name = anonymous_id
+    
+    user = AnonymousUser(
+        id=user_id,
+        anonymous_id=anonymous_id,
+        display_name=display_name,
+        created_at=datetime.utcnow(),
+        last_active=datetime.utcnow(),
+        is_blocked=False
+    )
+    
+    await db.users.insert_one(user.dict())
+    
+    token = generate_jwt_token(user_id)
+    
+    return AnonymousUserResponse(
+        id=user_id,
+        anonymous_id=anonymous_id,
+        display_name=display_name,
+        token=token
+    )
+
+@api_router.get("/auth/me", response_model=AnonymousUser)
+async def get_current_user_info(current_user: AnonymousUser = Depends(get_current_user)):
+    """Get current user info"""
+    return current_user
+
+@api_router.post("/posts", response_model=Post)
+async def create_post(post_data: PostCreate, current_user: AnonymousUser = Depends(get_current_user)):
+    """Create a new post"""
+    post_id = str(uuid.uuid4())
+    
+    post = Post(
+        id=post_id,
+        author_id=current_user.id,
+        author_display_name=current_user.display_name,
+        title=post_data.title,
+        content=post_data.content,
+        images=post_data.images,
+        tags=post_data.tags,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
+        is_blocked=False,
+        comments_count=0
+    )
+    
+    await db.posts.insert_one(post.dict())
+    return post
+
+@api_router.get("/posts", response_model=List[Post])
+async def get_posts(skip: int = 0, limit: int = 20):
+    """Get posts (public endpoint)"""
+    posts = await db.posts.find(
+        {"is_blocked": False}
+    ).sort("created_at", -1).skip(skip).limit(limit).to_list(limit)
+    
+    return [Post(**post) for post in posts]
+
+@api_router.get("/posts/{post_id}", response_model=Post)
+async def get_post(post_id: str):
+    """Get single post"""
+    post = await db.posts.find_one({"id": post_id, "is_blocked": False})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    return Post(**post)
+
+@api_router.post("/posts/{post_id}/comments", response_model=Comment)
+async def add_comment(post_id: str, comment_data: CommentCreate, current_user: AnonymousUser = Depends(get_current_user)):
+    """Add comment to post"""
+    # Check if post exists
+    post = await db.posts.find_one({"id": post_id, "is_blocked": False})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+    
+    comment_id = str(uuid.uuid4())
+    
+    comment = Comment(
+        id=comment_id,
+        post_id=post_id,
+        author_id=current_user.id,
+        author_display_name=current_user.display_name,
+        content=comment_data.content,
+        created_at=datetime.utcnow(),
+        is_blocked=False
+    )
+    
+    await db.comments.insert_one(comment.dict())
+    
+    # Update comments count
+    await db.posts.update_one(
+        {"id": post_id},
+        {"$inc": {"comments_count": 1}}
+    )
+    
+    return comment
+
+@api_router.get("/posts/{post_id}/comments", response_model=List[Comment])
+async def get_comments(post_id: str):
+    """Get comments for post"""
+    comments = await db.comments.find(
+        {"post_id": post_id, "is_blocked": False}
+    ).sort("created_at", 1).to_list(1000)
+    
+    return [Comment(**comment) for comment in comments]
+
+@api_router.post("/reports")
+async def create_report(report_data: ReportCreate, current_user: AnonymousUser = Depends(get_current_user)):
+    """Report content"""
+    report_id = str(uuid.uuid4())
+    
+    report = Report(
+        id=report_id,
+        reporter_id=current_user.id,
+        target_type=report_data.target_type,
+        target_id=report_data.target_id,
+        reason=report_data.reason,
+        created_at=datetime.utcnow()
+    )
+    
+    await db.reports.insert_one(report.dict())
+    
+    return {"message": "Report submitted successfully"}
+
+# Health check
+@api_router.get("/health")
+async def health_check():
+    return {"status": "healthy", "service": "kriptonit-backend"}
 
 # Include the router in the main app
 app.include_router(api_router)
