@@ -40,7 +40,7 @@ export default function PostsTab() {
 
   const fetchPosts = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/posts`);
+      const response = await fetch(`${API_BASE_URL}/posts`);
       if (response.ok) {
         const data = await response.json();
         setPosts(data);
