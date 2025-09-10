@@ -50,6 +50,14 @@ export default function PostDetail() {
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
 
+  // Platform specific top padding
+  const getTopPadding = () => {
+    if (Platform.OS === 'android') {
+      return (StatusBar.currentHeight || 0) + 10;
+    }
+    return insets.top;
+  };
+
   useEffect(() => {
     if (id) {
       fetchPost();
