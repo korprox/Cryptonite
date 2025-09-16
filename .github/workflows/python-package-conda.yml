@@ -25,7 +25,13 @@ jobs:
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Build Docker image
+    - name: Log in to Docker Hub
+      run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+    - name: Build and push Docker image
       run: |
         BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
-        docker build -t cryptonite:$BRANCH -t cryptonite:latest .
+        IMAGE=mussaevyasha/yasha
+        docker build -t $IMAGE:$BRANCH -t $IMAGE:latest .
+        docker push $IMAGE:$BRANCH
+        docker push $IMAGE:latest
