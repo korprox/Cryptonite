@@ -63,15 +63,17 @@ class AnonymousUser(BaseModel):
     created_at: datetime
     last_active: datetime
     is_blocked: bool = False
+    device_tokens: List[str] = []  # новое поле для токенов устройств
 
 class AnonymousUserResponse(BaseModel):
     id: str
     anonymous_id: str
     display_name: str
     token: str
+    device_tokens: List[str] = []
 
 class AnonymousUserCreate(BaseModel):
-    pass
+    device_token: Optional[str] = None  # токен при создании
 
 class Post(BaseModel):
     id: str
@@ -168,6 +170,7 @@ class ICECandidate(BaseModel):
 
 class ChatCreate(BaseModel):
     receiver_id: str
+    device_token: Optional[str] = None  # токен устройства для пушей при создании чата
 
 # ------------------ Helper functions ------------------
 
@@ -211,19 +214,21 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 # ------------------ Auth ------------------
 
 @api_router.post("/auth/anonymous", response_model=AnonymousUserResponse)
-async def create_anonymous_user():
+async def create_anonymous_user(user_data: AnonymousUserCreate):
     user_id = str(uuid.uuid4())
     anonymous_id = generate_anonymous_id()
     while await db.users.find_one({"anonymous_id": anonymous_id}):
         anonymous_id = generate_anonymous_id()
     display_name = anonymous_id
+    device_tokens = [user_data.device_token] if user_data.device_token else []
     user = AnonymousUser(
         id=user_id,
         anonymous_id=anonymous_id,
         display_name=display_name,
         created_at=datetime.utcnow(),
         last_active=datetime.utcnow(),
-        is_blocked=False
+        is_blocked=False,
+        device_tokens=device_tokens
     )
     await db.users.insert_one(user.dict())
     token = generate_jwt_token(user_id)
@@ -231,7 +236,8 @@ async def create_anonymous_user():
         id=user_id,
         anonymous_id=anonymous_id,
         display_name=display_name,
-        token=token
+        token=token,
+        device_tokens=device_tokens
     )
 
 @api_router.get("/auth/me", response_model=AnonymousUser)
@@ -317,6 +323,7 @@ async def create_chat(chat_data: ChatCreate, current_user: AnonymousUser = Depen
     existing_chat = await db.chats.find_one({"participants": {"$all": [current_user.id, chat_data.receiver_id]}, "is_active": True})
     if existing_chat:
         return Chat(**existing_chat)
+
     chat_id = str(uuid.uuid4())
     chat = Chat(
         id=chat_id,
@@ -326,8 +333,12 @@ async def create_chat(chat_data: ChatCreate, current_user: AnonymousUser = Depen
     )
     await db.chats.insert_one(chat.dict())
     asyncio.create_task(create_signaling_room(chat_id))
-    asyncio.create_task(on_chat_room_created(current_user.id, device_token))
-    asyncio.create_task(create_signaling_room(chat_id))
+
+    # пуш на создание чата
+    tokens = chat_data.device_token and [chat_data.device_token] or current_user.device_tokens
+    for token in tokens:
+        asyncio.create_task(on_chat_room_created(current_user.id, token))
+
     return chat
 
 @api_router.get("/chats", response_model=List[Chat])
@@ -360,6 +371,12 @@ async def get_chat_messages(chat_id: str, current_user: AnonymousUser = Depends(
         raise HTTPException(404, "Chat not found")
     messages = await db.messages.find({"chat_id": chat_id}).sort("created_at", 1).to_list(1000)
     return [Message(**m) for m in messages]
+
+# ------------------ Call start ------------------
+
+async def handle_call_start(user: AnonymousUser):
+    for token in user.device_tokens:
+        asyncio.create_task(on_call_start(user.id, token))
 
 # ------------------ Health ------------------
 
