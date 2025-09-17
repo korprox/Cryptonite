@@ -32,5 +32,6 @@ jobs:
       run: |
         BRANCH=$(echo "${GITHUB_REF#refs/heads/}" | tr '/' '-')
         IMAGE=mussaevyasha/yasha
-        docker build -t $IMAGE:$BRANCH -t $IMAGE:latest .
-        docker push $IMAGE:$BRANCH-$CI_PIPELINE_ID
+        TAG=${BRANCH}-${GITHUB_RUN_ID}
+        docker build -t $IMAGE:$TAG -t $IMAGE:latest .
+        docker push $IMAGE:$TAG
