@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
-
+from notification_sender import on_call_start, on_chat_room_created
 from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
@@ -325,6 +325,8 @@ async def create_chat(chat_data: ChatCreate, current_user: AnonymousUser = Depen
         last_message_at=datetime.utcnow()
     )
     await db.chats.insert_one(chat.dict())
+    asyncio.create_task(create_signaling_room(chat_id))
+    asyncio.create_task(on_chat_room_created(current_user.id, device_token))
     asyncio.create_task(create_signaling_room(chat_id))
     return chat
 
