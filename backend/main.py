@@ -6,7 +6,6 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
-from notification_sender import on_call_start, on_chat_room_created
 from fastapi import FastAPI, APIRouter, HTTPException, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from starlette.middleware.cors import CORSMiddleware
@@ -40,6 +39,9 @@ JWT_SECRET = os.environ.get("JWT_SECRET", "kriptonit_secret_key_2025")
 # Signaling service
 SIGNALING_URL = os.environ.get("SIGNALING_URL", "http://signaling-service:8080")
 
+# Notification service
+NOTIFICATION_URL = os.environ.get("NOTIFICATION_URL", "http://notification-service:9000")
+
 # FastAPI setup
 app = FastAPI()
 api_router = APIRouter(prefix="/api")
@@ -63,7 +65,7 @@ class AnonymousUser(BaseModel):
     created_at: datetime
     last_active: datetime
     is_blocked: bool = False
-    device_tokens: List[str] = []  # новое поле для токенов устройств
+    device_tokens: List[str] = []  # токены устройств
 
 class AnonymousUserResponse(BaseModel):
     id: str
@@ -73,7 +75,7 @@ class AnonymousUserResponse(BaseModel):
     device_tokens: List[str] = []
 
 class AnonymousUserCreate(BaseModel):
-    device_token: Optional[str] = None  # токен при создании
+    device_token: Optional[str] = None
 
 class Post(BaseModel):
     id: str
@@ -170,7 +172,7 @@ class ICECandidate(BaseModel):
 
 class ChatCreate(BaseModel):
     receiver_id: str
-    device_token: Optional[str] = None  # токен устройства для пушей при создании чата
+    device_token: Optional[str] = None
 
 # ------------------ Helper functions ------------------
 
@@ -210,6 +212,22 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         raise HTTPException(401, "Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(401, "Invalid token")
+
+async def send_push(user_id: str, token: str, title: str, body: str, platform: str = "firebase"):
+    payload = {
+        "user_id": user_id,
+        "title": title,
+        "body": body,
+        "platform": platform,
+        "token": token,
+    }
+    async with httpx.AsyncClient() as client:
+        try:
+            resp = await client.post(f"{NOTIFICATION_URL}/push", json=payload, timeout=5)
+            resp.raise_for_status()
+            logger.info(f"Push queued for {user_id}, token={token}")
+        except httpx.HTTPError as e:
+            logger.error(f"Push error for {user_id}: {e}")
 
 # ------------------ Auth ------------------
 
@@ -337,7 +355,12 @@ async def create_chat(chat_data: ChatCreate, current_user: AnonymousUser = Depen
     # пуш на создание чата
     tokens = chat_data.device_token and [chat_data.device_token] or current_user.device_tokens
     for token in tokens:
-        asyncio.create_task(on_chat_room_created(current_user.id, token))
+        asyncio.create_task(send_push(
+            user_id=current_user.id,
+            token=token,
+            title="Новый чат",
+            body=f"Чат с {current_user.display_name} создан"
+        ))
 
     return chat
 
@@ -376,7 +399,12 @@ async def get_chat_messages(chat_id: str, current_user: AnonymousUser = Depends(
 
 async def handle_call_start(user: AnonymousUser):
     for token in user.device_tokens:
-        asyncio.create_task(on_call_start(user.id, token))
+        asyncio.create_task(send_push(
+            user_id=user.id,
+            token=token,
+            title="Входящий звонок",
+            body="Вам звонят 🚀"
+        ))
 
 # ------------------ Health ------------------
 
